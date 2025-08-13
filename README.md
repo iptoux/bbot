@@ -9,6 +9,9 @@ This Discord bot can receive and send messages, and includes integration with Op
 - Local LM Studio integration
 - Streaming LLM responses back to Discord
 - Simple REST API for bot control
+- RAG (Retrieval-Augmented Generation) for user memory
+- Automatic extraction and storage of user information
+- Context-aware responses based on user history
 
 ## Setup
 
@@ -55,6 +58,8 @@ If you want to use a local LM Studio instance:
 
 ## Running the Bot
 
+### Standard Method
+
 Start the bot with:
 
 ```
@@ -63,7 +68,60 @@ node bot.js
 
 The bot will log in to Discord and start listening for commands.
 
+### Docker Deployment
+
+This application can also be run using Docker and Docker Compose.
+
+#### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
+#### Setup
+
+1. Make sure you have created the `env.local` file as described in the Setup section above.
+
+2. Build and start the container:
+
+```
+docker-compose up -d
+```
+
+This will build the Docker image and start the container in detached mode.
+
+3. View logs:
+
+```
+docker-compose logs -f
+```
+
+4. Stop the container:
+
+```
+docker-compose down
+```
+
+#### Persistent Data
+
+The Docker setup includes volume mappings for:
+- `env.local` file for environment variables
+- `user-memory.json` file for user data persistence
+- `data` directory for any additional persistent data
+
+These volumes ensure that your configuration and user data persist across container restarts.
+
 ## Commands
+
+### !cmd
+
+Displays a list of all available commands with their descriptions.
+
+Example:
+```
+!cmd
+```
+
+The bot will respond with a formatted list of all commands and how to use them.
 
 ### !llm \<message\>
 
@@ -80,6 +138,105 @@ The bot will:
 3. Stream the response back to the Discord chat, updating the message as new content arrives
 
 You can customize the assistant's personality and behavior by modifying the `ASSISTANT_ROLE` and `SYSTEM_PROMPT` environment variables in your env.local file. The default configuration instructs the LLM to provide clean, concise responses without showing its thinking process or internal deliberation.
+
+### !memory view
+
+Displays all information that the bot has stored about you, including:
+- Basic user details
+- Stored facts extracted from conversations
+- User preferences
+- Recent interaction history
+
+For privacy reasons, this information is sent to you as a private message (DM) rather than being displayed in the public channel.
+
+Example:
+```
+!memory view
+```
+
+### !memory delete
+
+Allows you to delete all information that the bot has stored about you. For security, this command requires confirmation.
+
+Example:
+```
+!memory delete
+```
+
+After running this command, the bot will ask for confirmation. To confirm deletion, reply with:
+```
+!confirm-delete
+```
+
+You have 30 seconds to confirm before the deletion request is cancelled.
+
+### !fact add \<fact\>
+
+Adds a fact about yourself to your user profile. This fact will be included in future conversations with the bot, allowing it to provide more personalized responses.
+
+Example:
+```
+!fact add I am a software developer
+!fact add I prefer dark mode in applications
+!fact add My favorite programming language is JavaScript
+```
+
+### !preference set \<key\> \<value\>
+
+Sets a preference in your user profile. Preferences are stored as key-value pairs and can be used to customize the bot's behavior.
+
+Example:
+```
+!preference set language German
+!preference set theme dark
+!preference set responseStyle concise
+```
+
+## User Memory System (RAG)
+
+The bot includes a Retrieval-Augmented Generation (RAG) system that allows it to remember information about users and use this context to provide more personalized responses.
+
+### How It Works
+
+1. **Information Storage**: The bot automatically stores information about users, including:
+   - Basic user details (username)
+   - Interaction history (recent messages and responses)
+   - Facts about the user (extracted from conversations or added manually)
+   - User preferences (key-value pairs set by the user)
+
+2. **Information Retrieval**: When a user sends a message with the `!llm` command, the bot:
+   - Retrieves the user's stored information
+   - Augments the LLM prompt with this context
+   - Generates a response that takes into account the user's history and preferences
+
+3. **Facts Definition**: Facts are simple statements about the user stored as strings in an array. Facts can be defined in two ways:
+   - **Automatic Extraction**: The bot automatically extracts facts from user messages using pattern matching
+     - "My name is John" → Stores "User's name is John"
+     - "I live in Berlin" → Stores "User lives in Berlin"
+     - "I like pizza" → Stores "User likes pizza"
+   - **Manual Addition**: Users can manually add facts using the `!fact add` command
+     - `!fact add I speak German` → Stores "I speak German"
+     - `!fact add I prefer dark mode` → Stores "I prefer dark mode"
+
+4. **Preferences Definition**: Preferences are key-value pairs stored in an object that can customize the bot's behavior. Preferences are defined using the `!preference set` command:
+   - `!preference set language German` → Sets the "language" preference to "German"
+   - `!preference set theme dark` → Sets the "theme" preference to "dark"
+   - `!preference set responseStyle concise` → Sets the "responseStyle" preference to "concise"
+
+The difference between facts and preferences:
+- **Facts** are simple statements about the user (stored as strings)
+- **Preferences** are configurable settings that can affect how the bot interacts with you (stored as key-value pairs)
+
+### User Memory File
+
+User information is stored in a JSON file called `user-memory.json` that is automatically created in the bot's directory. This file persists between bot restarts, allowing the bot to maintain long-term memory of users.
+
+### Privacy Considerations
+
+Since the bot stores user information:
+- The `user-memory.json` file should be properly secured
+- Users should be informed that the bot remembers information from conversations
+- Consider implementing a command to allow users to view or delete their stored information
 
 ## API Endpoints
 
