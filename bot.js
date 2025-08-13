@@ -226,13 +226,14 @@ client.on("messageCreate", async (message) => {
             if (isUsingLMStudio) {
 
                 const botOwner = await client.users.fetch("248930835250675712")
-                const botOwnerMention = await botOwner.send("Error connecting LM Studio, inform bot owner")
+                const botOwnerMention = await botOwner.send("Error connecting LM Studio, request of User: " + message.author.tag + " with prompt: " + prompt + "could not be completed.")
                 botOwnerMention.react("🐞")
                 console.log("Error connecting LM Studio, inform bot owner");
-                    message.react("🐞")
+
             }
             
-            message.reply(errorMessage);
+            (await message.reply(errorMessage)).react("🐞")
+            //message.react("")
         }
     }
 
