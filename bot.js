@@ -87,6 +87,38 @@ const jokes = {
         "Django – das Framework, das dich 'makemigrations' im Schlaf tippen lässt.",
         "Mit Django ist alles schnell gebaut – bis du anfängst, das ORM zu optimieren.",
         "Django: Für Leute, die 'batteries included' sehr wörtlich nehmen."
+    ],
+    typescript: [
+        "TypeScript – weil wir alle irgendwann Tippfehler satt hatten.",
+        "TypeScript: JavaScript mit einem Sicherheitsgurt.",
+        "TypeScript – die einzige Sprache, die dir sagt, dass du falsch liegst, bevor du es merkst.",
+        "Mit TypeScript ist dein Code sicher… bis du überall `any` benutzt.",
+        "TypeScript: Die To-Do-Liste für deinen Compiler.",
+        "TypeScript – wie ein strenger Lehrer, der dich aber mag."
+    ],
+    javascript: [
+        "JavaScript – wo `==` und `===` zwei völlig verschiedene Welten sind.",
+        "JavaScript: Weil wir nicht genug Chaos im Leben hatten.",
+        "Mit JavaScript kannst du alles bauen – auch Kopfschmerzen.",
+        "JavaScript – das Schweizer Taschenmesser, das sich manchmal selbst schneidet.",
+        "JavaScript: undefined is not a function… und doch irgendwie schon.",
+        "JavaScript – wo Datum und Zeit ein eigenes Abenteuer sind."
+    ],
+    html: [
+        "HTML – das Gerüst, das ohne CSS aussieht wie eine Baustelle.",
+        "HTML: Wenn du `<blink>` vermisst, bist du offiziell alt.",
+        "HTML – einfach, bis du anfängst, alles zu verschachteln.",
+        "Mit HTML allein ist eine Website wie ein Buch ohne Bilder.",
+        "HTML – die Sprache, die jeder kennt, aber keiner zugeben will.",
+        "HTML: Die Mutter aller Webseiten – manchmal streng, manchmal nachsichtig."
+    ],
+    css: [
+        "CSS – wo ein fehlendes Semikolon ganze Welten zerstört.",
+        "CSS: Weil Pixel nie da landen, wo du sie willst.",
+        "CSS – der Ort, an dem du `!important` als letzte Rettung benutzt.",
+        "Mit CSS bist du entweder Gott… oder der Teufel spielt mit deinen Abständen.",
+        "CSS: Flexbox – für alle, die gern Puzzles lösen.",
+        "CSS – die einzige Sprache, die es schafft, dich wegen 1px in den Wahnsinn zu treiben."
     ]
 };
 
@@ -256,6 +288,10 @@ client.on("messageCreate", async (message) => {
         const responseMessage = await message.reply(randomJoke("concrete5"));
     }
 
+    if (message.content.toLowerCase().includes("css")) {
+        const responseMessage = await message.reply(randomJoke("css"));
+    }
+
     if (message.content.toLowerCase().includes("django")) {
         const responseMessage = await message.reply(randomJoke("django"));
     }
@@ -265,8 +301,20 @@ client.on("messageCreate", async (message) => {
         const responseMessage = await message.reply(randomJoke("filemaker"));
     }
 
+    if (message.content.toLowerCase().includes("html")) {
+        const responseMessage = await message.reply(randomJoke("html"));
+    }
+
+    if (message.content.toLowerCase().includes("javascript")) {
+        const responseMessage = await message.reply(randomJoke("javascript"));
+    }
+
     if (message.content.toLowerCase().includes("php")) {
         const responseMessage = await message.reply(randomJoke("php"));
+    }
+
+    if (message.content.toLowerCase().includes("typescript")) {
+        const responseMessage = await message.reply(randomJoke("typescript"));
     }
 
     if (message.content.toLowerCase().includes("wordpress")) {
