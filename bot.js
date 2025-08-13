@@ -20,6 +20,16 @@ import express from "express";
 import cors from "cors";
 import { Client, GatewayIntentBits } from "discord.js";
 import OpenAI from "openai";
+import { 
+    initUserMemory, 
+    generateUserContext, 
+    addUserInteraction, 
+    extractUserFacts,
+    formatUserDataForDisplay,
+    deleteUserData,
+    addUserFact,
+    setUserPreference
+} from "./userMemory.js";
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const PORT = process.env.BOT_PORT || 4000;
@@ -102,15 +112,19 @@ const client = new Client({
 let notifyList = [];
 
 // Bot events
-client.once("ready", () => {
+client.once("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`);
+    
+    // Initialize user memory system
+    await initUserMemory();
+    console.log("User memory system ready");
 });
 
 client.on("messageCreate", async (message) => {
     // Ignore messages from the bot itself
     if (message.author.bot) return;
 
-    if (message.author.tag.toLowerCase() == "volkan" && message.content.startsWith() == "!llm") {
+    if (message.content.startsWith("!llm") && message.author.tag.toLowerCase() === "volkan") {
         return message.reply("Sorry, but you have no more credits left, try inviting friends to get 20 credits more!");
     }
 
@@ -145,13 +159,25 @@ client.on("messageCreate", async (message) => {
             
             console.log(`Using model: ${modelName}`);
             
+            // Retrieve user context from memory
+            const userId = message.author.id;
+            const username = message.author.username;
+            const userContext = await generateUserContext(userId);
+            
+            // Create system message with user context
+            let systemMessage = `${ASSISTANT_ROLE} ${SYSTEM_PROMPT}`;
+            if (userContext) {
+                systemMessage += `\n\nUser Information:\n${userContext}`;
+                console.log(`Retrieved context for user ${username} (${userId})`);
+            }
+            
             // Create a stream for the OpenAI response
             const stream = await openai.chat.completions.create({
                 model: modelName,
                 messages: [
                     { 
                         role: "system", 
-                        content: `${ASSISTANT_ROLE} ${SYSTEM_PROMPT}`
+                        content: systemMessage
                     },
                     { role: "user", content: prompt }
                 ],
@@ -182,6 +208,11 @@ client.on("messageCreate", async (message) => {
             // Final update to ensure all content is displayed
             if (responseContent) {
                 await responseMessage.edit(responseContent);
+                
+                // Record the interaction and extract facts
+                await addUserInteraction(userId, username, prompt, responseContent);
+                await extractUserFacts(userId, prompt, responseContent);
+                console.log(`Recorded interaction for user ${username} (${userId})`);
             } else {
                 await responseMessage.edit("No response generated. Please try again.");
             }
@@ -223,7 +254,169 @@ client.on("messageCreate", async (message) => {
         const responseMessage = await message.reply(randomJoke(wordpressJokes));
     }
 
-
+    // Handle memory commands
+    if (message.content.startsWith("!memory")) {
+        const userId = message.author.id;
+        const username = message.author.username;
+        const command = message.content.substring(8).trim().toLowerCase();
+        
+        console.log(`Processing memory command: "${command}" for user ${username} (${userId})`);
+        
+        if (command === "view") {
+            try {
+                // Send initial response in the channel
+                const channelResponse = await message.reply("Retrieving your stored information... I'll send it to you as a private message.");
+                
+                // Get formatted user data
+                const formattedData = await formatUserDataForDisplay(userId);
+                
+                // Send the data as a private message to the user
+                await message.author.send(formattedData);
+                
+                // Update the channel message to confirm the DM was sent
+                await channelResponse.edit("✅ Your stored information has been sent to you as a private message.");
+                console.log(`Displayed memory data for user ${username} (${userId}) via DM`);
+            } catch (error) {
+                console.error("Error displaying user memory:", error);
+                message.reply("Sorry, there was an error retrieving your information. Please try again later.");
+            }
+        } else if (command === "delete") {
+            try {
+                // Ask for confirmation
+                const confirmMessage = await message.reply(
+                    "⚠️ **Are you sure you want to delete all your stored information?** ⚠️\n" +
+                    "This action cannot be undone. All your stored facts, preferences, and interaction history will be permanently deleted.\n\n" +
+                    "Reply with `!confirm-delete` within 30 seconds to confirm deletion."
+                );
+                
+                // Create a filter for the confirmation message
+                const filter = m => m.author.id === userId && m.content.trim().toLowerCase() === "!confirm-delete";
+                
+                // Wait for confirmation
+                try {
+                    // Wait for the confirmation message for 30 seconds
+                    await message.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ['time'] });
+                    
+                    // User confirmed, delete the data
+                    const deleted = await deleteUserData(userId);
+                    
+                    if (deleted) {
+                        await confirmMessage.edit("✅ All your stored information has been deleted successfully.");
+                        console.log(`Deleted memory data for user ${username} (${userId})`);
+                    } else {
+                        await confirmMessage.edit("No stored information found for your user.");
+                    }
+                } catch (timeoutError) {
+                    // User didn't confirm in time
+                    await confirmMessage.edit("Deletion cancelled. Your information remains unchanged.");
+                }
+            } catch (error) {
+                console.error("Error deleting user memory:", error);
+                message.reply("Sorry, there was an error deleting your information. Please try again later.");
+            }
+        } else {
+            // Unknown memory command
+            message.reply(
+                "Unknown memory command. Available commands:\n" +
+                "- `!memory view` - View your stored information\n" +
+                "- `!memory delete` - Delete all your stored information"
+            );
+        }
+    }
+    
+    // Handle fact commands
+    if (message.content.startsWith("!fact")) {
+        const userId = message.author.id;
+        const username = message.author.username;
+        const commandParts = message.content.substring(6).trim().split(' ');
+        const subCommand = commandParts[0].toLowerCase();
+        
+        console.log(`Processing fact command: "${subCommand}" for user ${username} (${userId})`);
+        
+        if (subCommand === "add") {
+            // Extract the fact from the message (everything after "!fact add ")
+            const fact = message.content.substring(10).trim();
+            
+            if (!fact) {
+                return message.reply("Please provide a fact to add. Example: `!fact add I like programming`");
+            }
+            
+            try {
+                await addUserFact(userId, fact);
+                message.reply(`✅ Fact added: "${fact}"`);
+                console.log(`Added fact for user ${username} (${userId}): "${fact}"`);
+            } catch (error) {
+                console.error("Error adding user fact:", error);
+                message.reply("Sorry, there was an error adding your fact. Please try again later.");
+            }
+        } else {
+            // Unknown fact command
+            message.reply(
+                "Unknown fact command. Available commands:\n" +
+                "- `!fact add <fact>` - Add a fact about yourself"
+            );
+        }
+    }
+    
+    // Handle preference commands
+    if (message.content.startsWith("!preference")) {
+        const userId = message.author.id;
+        const username = message.author.username;
+        const commandParts = message.content.substring(12).trim().split(' ');
+        const subCommand = commandParts[0].toLowerCase();
+        
+        console.log(`Processing preference command: "${subCommand}" for user ${username} (${userId})`);
+        
+        if (subCommand === "set") {
+            // Extract the key and value from the message
+            const key = commandParts[1];
+            const value = commandParts.slice(2).join(' ');
+            
+            if (!key || !value) {
+                return message.reply("Please provide a key and value. Example: `!preference set language German`");
+            }
+            
+            try {
+                await setUserPreference(userId, key, value);
+                message.reply(`✅ Preference set: "${key}" = "${value}"`);
+                console.log(`Set preference for user ${username} (${userId}): "${key}" = "${value}"`);
+            } catch (error) {
+                console.error("Error setting user preference:", error);
+                message.reply("Sorry, there was an error setting your preference. Please try again later.");
+            }
+        } else {
+            // Unknown preference command
+            message.reply(
+                "Unknown preference command. Available commands:\n" +
+                "- `!preference set <key> <value>` - Set a preference"
+            );
+        }
+    }
+    
+    // Handle cmd command to list all available commands
+    if (message.content.startsWith("!cmd")) {
+        console.log("Processing !cmd command");
+        
+        const commandsList = [
+            "**Available Commands:**",
+            "",
+            "**`!cmd`** - Display this list of commands",
+            "",
+            "**`!llm <prompt>`** - Send a prompt to the AI and get a response",
+            "Example: `!llm Tell me a joke about programming`",
+            "",
+            "**`!memory view`** - View your stored information (sent as a private message)",
+            "**`!memory delete`** - Delete all your stored information",
+            "",
+            "**`!fact add <fact>`** - Add a fact about yourself",
+            "Example: `!fact add I like programming`",
+            "",
+            "**`!preference set <key> <value>`** - Set a preference",
+            "Example: `!preference set language German`"
+        ].join("\n");
+        
+        message.reply(commandsList);
+    }
 });
 
 // API endpoints to control bot
