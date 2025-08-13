@@ -39,62 +39,63 @@ const LM_STUDIO_API_URL = process.env.LM_STUDIO_API_URL;
 const ASSISTANT_ROLE = process.env.ASSISTANT_ROLE || "You are a helpful assistant.";
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT || "Provide direct responses without showing your thinking process. Do not include any deliberation, multiple options, or reasoning in your response. Just provide the final answer.";
 
-const wordpressJokes = [
-    "Das Ikea-Regal unter den CMS – passt immer irgendwie, wackelt aber manchmal.",
-    "Plug-in Roulette: Welches bricht heute alles?",
-    "WordPress – wo Updates wie Überraschungseier sind: Spannung, Spiel und… kaputte Website.",
-    "WordPress – weil 80% der Webseiten sich nicht selbst kaputt machen.",
-    "Das CMS, das aus 'nur mal kurz bloggen' eine lebenslange Wartung macht.",
-    "WordPress-Update: 1 Minute runterladen, 3 Stunden Fehler beheben."
-];
+const jokes = {
+    wordpress: [
+        "Das Ikea-Regal unter den CMS – passt immer irgendwie, wackelt aber manchmal.",
+        "Plug-in Roulette: Welches bricht heute alles?",
+        "WordPress – wo Updates wie Überraschungseier sind: Spannung, Spiel und… kaputte Website.",
+        "WordPress – weil 80% der Webseiten sich nicht selbst kaputt machen.",
+        "Das CMS, das aus 'nur mal kurz bloggen' eine lebenslange Wartung macht.",
+        "WordPress-Update: 1 Minute runterladen, 3 Stunden Fehler beheben."
+    ],
+    php: [
+        "Pretty Hopeless Programming?",
+        "PHP – der Code, den du 2005 geschrieben hast, läuft immer noch. Und das ist das Problem.",
+        "PHP ist wie Pizza mit Ananas: polarisiert, aber läuft trotzdem.",
+        "PHP – wie ein altes Sofa: nicht schön, aber bequem und steht schon ewig da.",
+        "In PHP gibt’s 100 Wege, etwas zu tun – und mindestens 90 davon sind falsch.",
+        "PHP – du weißt nie, ob es Magie oder nur ein Bug ist."
+    ],
+    angular: [
+        "Angular – wie React, nur mit mehr Ritualen.",
+        "Angular ist das Ikea-Regal mit 3000 Schrauben – aber die Anleitung ist ein PDF auf Englisch.",
+        "Mit Angular brauchst du keinen Escape Room – der Code ist der Escape Room.",
+        "Angular: Weil wir alle heimlich DI (Dependency Injection) lieben.",
+        "Mit Angular fängst du klein an – und landest in einer Ordnerstruktur mit eigener Postleitzahl.",
+        "Angular – das Framework, das dich mehr über Interfaces als über deine App nachdenken lässt."
+    ],
+    filemaker: [
+        "FileMaker – das Schweizer Taschenmesser der Datenbanken, nur mit eigenem Korkenzieher.",
+        "Mit FileMaker kannst du alles bauen – außer vielleicht ein Flugzeug. Oder doch?",
+        "FileMaker: Wo Tabellen nicht nur Tabellen sind, sondern auch deine besten Freunde.",
+        "FileMaker – der Baukasten für Datenbankfans mit leichtem Kontrollzwang.",
+        "FileMaker: Weil Excel irgendwann einfach zu klein wird.",
+        "In FileMaker gibt’s keinen Bug – nur ein kreatives Feature mit Persönlichkeit."
+    ],
+    concrete5: [
+        "Concrete5 – das CMS, das härter ist als dein Kopf bei der Fehlersuche.",
+        "Mit Concrete5 baust du Webseiten so solide, dass sie auch einen Erdbeben-Test bestehen.",
+        "Concrete5: Wenn WordPress zu weich und Joomla zu seltsam ist.",
+        "Concrete5 – das einzige CMS, bei dem du beim Installieren einen Bauhelm brauchst.",
+        "Concrete5: Weil Content-Management auch Beton vertragen kann.",
+        "So stabil wie Beton – und manchmal genauso flexibel."
+    ],
+    django: [
+        "Django – wie Zauberei, nur mit mehr Migrationen.",
+        "Mit Django kannst du in einer Stunde eine App bauen – und drei Tage das Admin-Panel anpassen.",
+        "Django: Weil wir alle heimlich Class-Based Views lieben. Oder hassen. Oder beides.",
+        "Django – das Framework, das dich 'makemigrations' im Schlaf tippen lässt.",
+        "Mit Django ist alles schnell gebaut – bis du anfängst, das ORM zu optimieren.",
+        "Django: Für Leute, die 'batteries included' sehr wörtlich nehmen."
+    ]
+};
 
-const phpJokes = [
-    "Pretty Hopeless Programming?",
-    "PHP – der Code, den du 2005 geschrieben hast, läuft immer noch. Und das ist das Problem.",
-    "PHP ist wie Pizza mit Ananas: polarisiert, aber läuft trotzdem.",
-    "PHP – wie ein altes Sofa: nicht schön, aber bequem und steht schon ewig da.",
-    "In PHP gibt’s 100 Wege, etwas zu tun – und mindestens 90 davon sind falsch.",
-    "PHP – du weißt nie, ob es Magie oder nur ein Bug ist."
-];
-
-const angularJokes = [
-    "Angular – wie React, nur mit mehr Ritualen.",
-    "Angular ist das Ikea-Regal mit 3000 Schrauben – aber die Anleitung ist ein PDF auf Englisch.",
-    "Mit Angular brauchst du keinen Escape Room – der Code ist der Escape Room.",
-    "Angular: Weil wir alle heimlich DI (Dependency Injection) lieben.",
-    "Mit Angular fängst du klein an – und landest in einer Ordnerstruktur mit eigener Postleitzahl.",
-    "Angular – das Framework, das dich mehr über Interfaces als über deine App nachdenken lässt."
-];
-
-const filemakerJokes = [
-    "FileMaker – das Schweizer Taschenmesser der Datenbanken, nur mit eigenem Korkenzieher.",
-    "Mit FileMaker kannst du alles bauen – außer vielleicht ein Flugzeug. Oder doch?",
-    "FileMaker: Wo Tabellen nicht nur Tabellen sind, sondern auch deine besten Freunde.",
-    "FileMaker – der Baukasten für Datenbankfans mit leichtem Kontrollzwang.",
-    "FileMaker: Weil Excel irgendwann einfach zu klein wird.",
-    "In FileMaker gibt’s keinen Bug – nur ein kreatives Feature mit Persönlichkeit."
-];
-
-const concrete5Jokes = [
-    "Concrete5 – das CMS, das härter ist als dein Kopf bei der Fehlersuche.",
-    "Mit Concrete5 baust du Webseiten so solide, dass sie auch einen Erdbeben-Test bestehen.",
-    "Concrete5: Wenn WordPress zu weich und Joomla zu seltsam ist.",
-    "Concrete5 – das einzige CMS, bei dem du beim Installieren einen Bauhelm brauchst.",
-    "Concrete5: Weil Content-Management auch Beton vertragen kann.",
-    "So stabil wie Beton – und manchmal genauso flexibel."
-];
-
-const djangoJokes = [
-    "Django – wie Zauberei, nur mit mehr Migrationen.",
-    "Mit Django kannst du in einer Stunde eine App bauen – und drei Tage das Admin-Panel anpassen.",
-    "Django: Weil wir alle heimlich Class-Based Views lieben. Oder hassen. Oder beides.",
-    "Django – das Framework, das dich 'makemigrations' im Schlaf tippen lässt.",
-    "Mit Django ist alles schnell gebaut – bis du anfängst, das ORM zu optimieren.",
-    "Django: Für Leute, die 'batteries included' sehr wörtlich nehmen."
-];
-
-
-function randomJoke(list) {
+// Zufälligen Witz zu einem Begriff ausgeben
+function randomJoke(term) {
+    if (!jokes[term]) {
+        console.log(`Keine Witze für "${term}" gefunden.`);
+    }
+    const list = jokes[term];
     return list[Math.floor(Math.random() * list.length)];
 }
 
@@ -248,28 +249,28 @@ client.on("messageCreate", async (message) => {
 
 
     if (message.content.toLowerCase().includes("angular")) {
-        const responseMessage = await message.reply(randomJoke(angularJokes));
+        const responseMessage = await message.reply(randomJoke("angular"));
     }
 
     if (message.content.toLowerCase().includes("concrete5")) {
-        const responseMessage = await message.reply(randomJoke(concrete5Jokes));
+        const responseMessage = await message.reply(randomJoke("concrete5"));
     }
 
     if (message.content.toLowerCase().includes("django")) {
-        const responseMessage = await message.reply(randomJoke(djangoJokes));
+        const responseMessage = await message.reply(randomJoke("django"));
     }
 
 
     if (message.content.toLowerCase().includes("filemaker")) {
-        const responseMessage = await message.reply(randomJoke(filemakerJokes));
+        const responseMessage = await message.reply(randomJoke("filemaker"));
     }
 
     if (message.content.toLowerCase().includes("php")) {
-        const responseMessage = await message.reply(randomJoke(phpJokes));
+        const responseMessage = await message.reply(randomJoke("php"));
     }
 
     if (message.content.toLowerCase().includes("wordpress")) {
-        const responseMessage = await message.reply(randomJoke(wordpressJokes));
+        const responseMessage = await message.reply(randomJoke("wordpress"));
     }
 
     // Handle memory commands
