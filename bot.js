@@ -224,7 +224,12 @@ client.on("messageCreate", async (message) => {
             
             // Add more specific error message for LM Studio
             if (isUsingLMStudio) {
-                errorMessage += " Make sure LM Studio is running and the API server is enabled.";
+
+                const botOwner = await client.users.fetch("248930835250675712")
+                const botOwnerMention = await botOwner.send("Error connecting LM Studio, inform bot owner")
+                botOwnerMention.react("🐞")
+                console.log("Error connecting LM Studio, inform bot owner");
+                    message.react("🐞")
             }
             
             message.reply(errorMessage);
