@@ -84,6 +84,15 @@ const concrete5Jokes = [
     "So stabil wie Beton – und manchmal genauso flexibel."
 ];
 
+const djangoJokes = [
+    "Django – wie Zauberei, nur mit mehr Migrationen.",
+    "Mit Django kannst du in einer Stunde eine App bauen – und drei Tage das Admin-Panel anpassen.",
+    "Django: Weil wir alle heimlich Class-Based Views lieben. Oder hassen. Oder beides.",
+    "Django – das Framework, das dich 'makemigrations' im Schlaf tippen lässt.",
+    "Mit Django ist alles schnell gebaut – bis du anfängst, das ORM zu optimieren.",
+    "Django: Für Leute, die 'batteries included' sehr wörtlich nehmen."
+];
+
 
 function randomJoke(list) {
     return list[Math.floor(Math.random() * list.length)];
@@ -244,6 +253,10 @@ client.on("messageCreate", async (message) => {
 
     if (message.content.toLowerCase().includes("concrete5")) {
         const responseMessage = await message.reply(randomJoke(concrete5Jokes));
+    }
+
+    if (message.content.toLowerCase().includes("django")) {
+        const responseMessage = await message.reply(randomJoke(djangoJokes));
     }
 
 
