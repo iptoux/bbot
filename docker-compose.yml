@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  bbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bbot-server
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./data:/app/data
+      - ./env.local:/app/env.local
+      - ./user-memory.json:/app/user-memory.json
+    environment:
+      - NODE_ENV=production
+      # You can override environment variables here if needed
+      # - DISCORD_BOT_TOKEN=your_token_here
+      # - OPENAI_API_KEY=your_key_here
+      # - OPENAI_MODEL=your_model_here
+      # - LM_STUDIO_API_URL=your_url_here
+      # - BOT_PORT=4000
+    networks:
+      - bbot-network
+
+networks:
+  bbot-network:
+    driver: bridge
