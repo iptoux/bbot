@@ -220,7 +220,7 @@ client.on("messageCreate", async (message) => {
             const apiType = isUsingLMStudio ? "LM Studio API" : "OpenAI API";
             console.error(`Error with ${apiType}:`, error);
             
-            let errorMessage = "Sorry, there was an error processing your request. Please try again later.";
+            let errorMessage = "Sorry, there was an error processing your request, i informed my Master. Please try again later.";
             
             // Add more specific error message for LM Studio
             if (isUsingLMStudio) {
