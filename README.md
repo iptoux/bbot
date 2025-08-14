@@ -1,458 +1,285 @@
-# Discord Bot with LLM Integration
+# BBot Server — Discord Bot with LLM, Memory (RAG) and Quiz
 
-This Discord bot can receive and send messages, and includes integration with OpenAI's API or a local LM Studio endpoint to process LLM (Large Language Model) requests.
+A Discord bot that connects to OpenAI or a local LM Studio server, streams answers in chat, remembers user facts/preferences (RAG), supports image prompts, exposes a tiny REST API, and ships with a configurable multiple‑choice Quiz game.
+
+Note: This README was fully reworked on 2025‑08‑14 for clarity and step‑by‑step onboarding.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Configuration (env.local)](#configuration-envlocal)
+  - [OpenAI vs. LM Studio](#openai-vs-lm-studio)
+  - [Quiz settings](#quiz-settings)
+- [Run](#run)
+  - [Node.js](#nodejs)
+  - [Docker / Docker Compose](#docker--docker-compose)
+- [Bot Commands](#bot-commands)
+  - !cmd
+  - !llm (text + images)
+  - !memory view / !memory delete / !confirm-delete
+  - !fact add
+  - !preference set
+  - [Quiz: !quiz / !toplist](#quiz-commands)
+- [User Memory (RAG)](#user-memory-rag)
+- [Image Processing (Vision)](#image-processing-vision)
+- [REST API Endpoints](#rest-api-endpoints)
+- [Data & Persistence](#data--persistence)
+- [Troubleshooting](#troubleshooting)
+- [FAQ](#faq)
+- [License](#license)
+
+## Overview
+
+The bot listens in Discord channels and responds to commands. You can use:
+- OpenAI API, or
+- a local LM Studio server
+
+to generate responses. The bot can remember users (facts, preferences, recent interactions), handle multimodal requests (images), and run a simple Quiz game with points and a toplist.
 
 ## Features
 
-- Discord message handling
-- OpenAI API integration
-- Local LM Studio integration
-- Streaming LLM responses back to Discord
-- Simple REST API for bot control
-- RAG (Retrieval-Augmented Generation) for user memory
-- Automatic extraction and storage of user information
-- Context-aware responses based on user history
+- Discord message handling (discord.js v14)
+- LLM backends: OpenAI API or local LM Studio
+- Streaming replies edited in place, with safe chunking (<= 2000 chars)
+- User memory (RAG): facts, preferences, recent interactions per user
+- Optional LLM‑based extraction of new user facts from conversations
+- Multimodal: analyze up to 5 attached images per !llm prompt
+- Small REST API (send message, manage notifications)
+- Quiz game: timed multiple‑choice questions with cooldown and toplist
+- Dockerfile and docker‑compose for containerized deployment
 
-## Setup
+## Prerequisites
 
-1. Make sure you have Node.js installed (v14 or higher recommended)
-2. Clone this repository
-3. Install dependencies:
-   ```
+- Node.js 18+ recommended (works with modern LTS)
+- A Discord Bot token (create in the Discord Developer Portal; invite with the needed intents/permissions)
+- Either:
+  - OpenAI API key, or
+  - LM Studio installed and its Local Server running
+
+## Quick Start
+
+1. Clone the repo and install dependencies:
    npm install
-   ```
-4. Create an `env.local` file in the root directory with the following variables:
-   ```
-   DISCORD_BOT_TOKEN=your_discord_bot_token_here
-   BOT_PORT=4000
-   OPENAI_API_KEY=your_openai_api_key_here
-   OPENAI_MODEL=openai/gpt-oss-20b
-   LM_STUDIO_API_URL=http://localhost:1234/v1
-   FACTS_VIA_LLM=true
-   ASSISTANT_ROLE=You are a helpful assistant.
-   SYSTEM_PROMPT=Provide direct responses without showing your thinking process.
-   ```
-   - `FACTS_VIA_LLM`: When set to `true`, the bot will use the configured LLM (OpenAI or LM Studio) to extract persistent user facts from conversations. When omitted or `false`, a lightweight regex-based fallback is used.
-   - Replace `your_discord_bot_token_here` with your actual Discord bot token
-   - For OpenAI API: Replace `your_openai_api_key_here` with your OpenAI API key
-   - For LM Studio: Set `LM_STUDIO_API_URL` to the URL of your local LM Studio API server (typically http://localhost:1234/v1)
-   - Set `ASSISTANT_ROLE` to define the assistant's personality (e.g., "You are a helpful assistant." or "You are a friendly German-speaking assistant.")
-   - Set `SYSTEM_PROMPT` to provide system instructions (e.g., "Provide direct responses without showing your thinking process.")
+2. Create env.local in the project root (see Configuration).
+3. Start the bot:
+   node bot.js
+4. In your Discord server, type:
+   !cmd
+   to see commands.
 
-### Using with OpenAI API
+## Installation
 
-If you want to use the OpenAI API, make sure:
-- `OPENAI_API_KEY` is set to your valid OpenAI API key
-- `OPENAI_MODEL` is set to the model you want to use (e.g., "openai/gpt-oss-20b")
-- `LM_STUDIO_API_URL` is either not set or commented out
+- Clone: git clone <your-fork-or-repo-url>
+- Install dependencies: npm install
+- Check package.json: there’s no start script; run with node bot.js
 
-### Using with LM Studio
+## Configuration (env.local)
 
-If you want to use a local LM Studio instance:
-1. Download and install [LM Studio](https://lmstudio.ai/)
-2. Open LM Studio and download/import a model
-3. Go to the "Local Server" tab in LM Studio
-4. Click "Start Server" to start the local API server
-5. In your `env.local` file:
-   - Set `LM_STUDIO_API_URL` to the server URL shown in LM Studio (typically http://localhost:1234/v1)
-   - Set `OPENAI_MODEL` to the name of your model (if your model name starts with "openai/", the prefix will be automatically removed when using LM Studio)
-   - `OPENAI_API_KEY` can be set to any non-empty string as it's not used with LM Studio
+Create a file env.local in the project root. Example minimal template:
 
-## Running the Bot
+DISCORD_BOT_TOKEN=your_discord_bot_token
+BOT_PORT=4000
 
-### Standard Method
+# Choose one backend:
+# OpenAI
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=openai/gpt-oss-20b
 
-Start the bot with:
+# or LM Studio
+# LM_STUDIO_API_URL=http://localhost:1234/v1
 
-```
-node bot.js
-```
+# Memory extraction via LLM (optional)
+FACTS_VIA_LLM=true
 
-The bot will log in to Discord and start listening for commands.
+# Assistant behavior
+ASSISTANT_ROLE=You are a helpful assistant.
+SYSTEM_PROMPT=Provide direct responses without showing your thinking process.
 
-### Docker Deployment
+Variables explained:
+- DISCORD_BOT_TOKEN: Your Discord bot token.
+- BOT_PORT: Port for the Express server (default 4000).
+- OPENAI_API_KEY: Required when using OpenAI.
+- OPENAI_MODEL: Model identifier (default openai/gpt-oss-20b). When using LM Studio, if your model name starts with openai/, the prefix is removed automatically.
+- LM_STUDIO_API_URL: e.g., http://localhost:1234/v1 if you run LM Studio locally.
+- FACTS_VIA_LLM: true to ask the LLM to extract persistent user facts; otherwise regex fallback.
+- ASSISTANT_ROLE: Persona for the assistant.
+- SYSTEM_PROMPT: System instruction for the LLM. The code also sanitizes replies to avoid exposing hidden thinking or image URLs.
 
-This application can also be run using Docker and Docker Compose.
+### OpenAI vs. LM Studio
 
-#### Prerequisites
+OpenAI:
+- Set OPENAI_API_KEY
+- Optionally set OPENAI_MODEL
+- Do not set LM_STUDIO_API_URL
 
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+LM Studio:
+- Install LM Studio, download a model, start Local Server
+- Set LM_STUDIO_API_URL (e.g., http://localhost:1234/v1)
+- Set OPENAI_MODEL to your model name (OPENAI_API_KEY can be any non-empty value but is not used)
 
-#### Setup
+### Quiz settings
 
-1. Make sure you have created the `env.local` file as described in the Setup section above.
+Two environment variables control the Quiz behavior:
+- QUIZ_ANSWER_SECONDS: Time limit per question (seconds). Minimum 5. Default 20.
+- QUIZ_COOLDOWN_MINUTES: Cooldown before a user can start a new quiz (minutes). Minimum 1. Default 60.
 
-2. Build and start the container:
+Example env.local additions:
 
-```
-docker-compose up -d
-```
+QUIZ_ANSWER_SECONDS=30
+QUIZ_COOLDOWN_MINUTES=60
 
-This will build the Docker image and start the container in detached mode.
+## Run
 
+### Node.js
+
+- Start: node bot.js
+- The bot logs key environment configuration at startup for diagnostics.
+
+### Docker / Docker Compose
+
+Prerequisites:
+- Docker
+- Docker Compose
+
+Steps:
+1. Ensure you created env.local as above.
+2. Start containers:
+   docker-compose up -d
 3. View logs:
+   docker-compose logs -f
+4. Stop:
+   docker-compose down
 
-```
-docker-compose logs -f
-```
+Persistent volumes (docker-compose.yml):
+- ./env.local -> /app/env.local
+- ./user-memory.json -> /app/user-memory.json
+- ./data -> /app/data
 
-4. Stop the container:
+## Bot Commands
 
-```
-docker-compose down
-```
-
-#### Persistent Data
-
-The Docker setup includes volume mappings for:
-- `env.local` file for environment variables
-- `user-memory.json` file for user data persistence
-- `data` directory for any additional persistent data
-
-These volumes ensure that your configuration and user data persist across container restarts.
-
-## Commands
-
-### !cmd
-
-Displays a list of all available commands with their descriptions.
-
-Example:
-```
 !cmd
-```
+- Lists all available commands.
 
-The bot will respond with a formatted list of all commands and how to use them.
+!llm <message>
+- Sends a prompt to the configured LLM backend and streams the reply.
+- You can attach up to 5 images (PNG, JPG/JPEG, GIF, WEBP, BMP, TIFF) for visual analysis.
+- Image prompts intentionally ignore user memory to avoid biasing visual descriptions.
 
-### !llm \<message\>
+Examples:
+- !llm Tell me a joke about programming
+- Attach a photo, then: !llm What is shown in this image?
 
-Sends a prompt to either the OpenAI API or your local LM Studio endpoint (depending on your configuration) and streams the response back to the Discord chat.
-
-Example:
-```
-!llm Tell me a joke about programming
-```
-
-You can also attach image(s) to your !llm message to request visual analysis:
-- Example: attach a photo and send `!llm What is shown in this image?`
-- Up to 5 images are processed per request. Supported formats include PNG, JPG/JPEG, GIF, WEBP, BMP, and TIFF.
-
-Behavior details:
-1. Process your request (including downloading and preparing image attachments if present)
-2. Send the prompt to either OpenAI API or LM Studio with the assistant role and system instructions defined in your environment variables
-3. Stream the response back to the Discord chat, updating the message as new content arrives
-
-Notes for images:
-- For image analysis, the bot intentionally does not inject user memory or "carryover" context to avoid biasing visual descriptions.
-- The system prompt instructs the model to analyze only the current images and to avoid including any image URLs or markdown in the reply. The bot additionally sanitizes the output to remove any leaked URLs.
-
-You can customize the assistant's personality and behavior by modifying the `ASSISTANT_ROLE` and `SYSTEM_PROMPT` environment variables in your env.local file. The default configuration instructs the LLM to provide clean, concise responses without showing its thinking process or internal deliberation.
-
-### !memory view
-
-Displays all information that the bot has stored about you, including:
-- Basic user details
-- Stored facts extracted from conversations
-- User preferences
-- Recent interaction history
-
-For privacy reasons, this information is sent to you as a private message (DM) rather than being displayed in the public channel.
-
-Example:
-```
 !memory view
-```
+- DMs you all stored info about you: basics, facts, preferences, recent interactions.
 
-### !memory delete
+!memory delete + !confirm-delete
+- Requests deletion of your stored data and requires a confirmation within 30 seconds via !confirm-delete.
 
-Allows you to delete all information that the bot has stored about you. For security, this command requires confirmation.
+!fact add <fact>
+- Adds a persistent fact about you.
+- Examples: !fact add I speak German; !fact add I prefer dark mode
 
-Example:
-```
-!memory delete
-```
+!preference set <key> <value>
+- Sets a preference (key/value) that can influence responses.
+- Examples: !preference set language German; !preference set responseStyle concise
 
-After running this command, the bot will ask for confirmation. To confirm deletion, reply with:
-```
-!confirm-delete
-```
+### Quiz commands
 
-You have 30 seconds to confirm before the deletion request is cancelled.
+!quiz [count]
+- Starts a quiz in the current channel (1–5 questions; default 5). Only one active quiz per channel.
+- Everyone can answer by sending just the letter A–F (no replies/quotes). Only your first valid answer per question counts.
+- The bot reacts with ✅ when your answer is registered.
+- Each correct answer gives 1 point. If you answer all questions correctly in a session, you receive +2 bonus points.
+- The per-question time limit is shown and controlled by QUIZ_ANSWER_SECONDS.
+- A user can only start a new quiz after QUIZ_COOLDOWN_MINUTES have passed; otherwise the bot shows the remaining wait time and when it’s allowed again.
+- If a question JSON contains a category, it is displayed as [Category: ...].
 
-### !fact add \<fact\>
+!toplist
+- Shows the top users by total quiz points (server‑wide).
 
-Adds a fact about yourself to your user profile. This fact will be included in future conversations with the bot, allowing it to provide more personalized responses.
+Question catalog (quiz-questions.json):
+- File location: quiz-questions.json at project root.
+- Structure example:
+  {
+    "category": "Programming",             // optional
+    "question": "Which array method filters elements?", // required
+    "choices": ["map", "forEach", "filter", "reduce"], // 2–6 options
+    "answerIndex": 2                         // 0-based index
+  }
+- Up to 5 questions are asked per quiz (or fewer if you use !quiz 3).
+- Supported options: A–F (max 6 choices).
+- Ensure answerIndex is within choices range.
 
-Example:
-```
-!fact add I am a software developer
-!fact add I prefer dark mode in applications
-!fact add My favorite programming language is JavaScript
-```
+## User Memory (RAG)
 
-### !preference set \<key\> \<value\>
+- Stores: username, recent interactions, user facts, preferences.
+- Retrieval: !llm prompts are augmented with the user’s stored context (except for image analysis, where context is intentionally omitted).
+- Fact extraction:
+  - If FACTS_VIA_LLM=true, the bot asks the LLM to output ONLY a JSON array (max 5) of short, stable, verifiable user facts.
+  - If LLM extraction is disabled/fails, falls back to pattern matching (e.g., “I live in Berlin”).
+- Deduplication: New facts are deduped before saving to user-memory.json.
+- Limits: Recent interactions are bounded (last 10) to prevent growth.
+- Privacy: Users can view/delete their data with !memory commands.
 
-Sets a preference in your user profile. Preferences are stored as key-value pairs and can be used to customize the bot's behavior.
+## Image Processing (Vision)
 
-Example:
-```
-!preference set language German
-!preference set theme dark
-!preference set responseStyle concise
-```
+- Supports up to 5 images per !llm prompt.
+- OpenAI backend: image URLs are passed as image_url parts.
+- LM Studio backend: images are downloaded and sent as base64 data URLs when required by the model.
+- Guardrails: ~10 MB per image; failed/oversized images are skipped; if all fail, the bot falls back to text-only and informs the model.
+- Sanitization: Replies are cleaned to avoid leaking image URLs/markdown.
 
-## User Memory System (RAG)
+## REST API Endpoints
 
-The bot includes a Retrieval-Augmented Generation (RAG) system that allows it to remember information about users and use this context to provide more personalized responses.
+- POST /notify/add — Add a user to a notification list
+- POST /notify/remove — Remove a user from the notification list
+- POST /send — Send a message to a specific channel
 
-### How It Works
+Example (PowerShell curl):
+  curl -X POST http://localhost:4000/send -H "Content-Type: application/json" -d '{"channelId":"<CHANNEL_ID>","message":"Hello from API"}'
 
-1. **Information Storage**: The bot automatically stores information about users, including:
-   - Basic user details (username)
-   - Interaction history (recent messages and responses)
-   - Facts about the user (extracted from conversations or added manually)
-   - User preferences (key-value pairs set by the user)
+## Data & Persistence
 
-2. **Information Retrieval**: When a user sends a message with the `!llm` command, the bot:
-   - Retrieves the user's stored information
-   - Augments the LLM prompt with this context
-   - Generates a response that takes into account the user's history and preferences
-
-3. **Facts Definition**: Facts are simple, persistent statements about the user stored as strings in an array. Facts can be created in two ways:
-   - **Automatic Extraction (LLM-first, with fallback)**: When `FACTS_VIA_LLM=true`, the bot asks the LLM to extract new persistent facts from recent conversation context. The LLM is instructed to output ONLY a JSON array of short, stable, verifiable facts (max 5) and to avoid temporary states or duplicates. If LLM extraction is disabled or fails, the bot falls back to simple pattern matching.
-     - Examples (fallback patterns):
-       - "My name is John" → Stores "User's name is John"
-       - "I live in Berlin" → Stores "User lives in Berlin"
-       - "I like pizza" → Stores "User likes pizza"
-   - **Manual Addition**: Users can add facts using the `!fact add` command
-     - `!fact add I speak German` → Stores "I speak German"
-     - `!fact add I prefer dark mode` → Stores "I prefer dark mode"
-
-4. **Preferences Definition**: Preferences are key-value pairs stored in an object that can customize the bot's behavior. Preferences are defined using the `!preference set` command:
-   - `!preference set language German` → Sets the "language" preference to "German"
-   - `!preference set theme dark` → Sets the "theme" preference to "dark"
-   - `!preference set responseStyle concise` → Sets the "responseStyle" preference to "concise"
-
-The difference between facts and preferences:
-- **Facts** are simple statements about the user (stored as strings)
-- **Preferences** are configurable settings that can affect how the bot interacts with you (stored as key-value pairs)
-
-### User Memory File
-
-User information is stored in a JSON file called `user-memory.json` that is automatically created in the bot's directory. This file persists between bot restarts, allowing the bot to maintain long-term memory of users.
-
-### Privacy Considerations
-
-Since the bot stores user information:
-- The `user-memory.json` file should be properly secured
-- Users should be informed that the bot remembers information from conversations
-- Consider implementing a command to allow users to view or delete their stored information
-
-### LLM-based User Facts Extraction (Configuration)
-
-To enable LLM-based extraction of user facts, set `FACTS_VIA_LLM=true` in `env.local` and configure one of the following:
-- OpenAI API: set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` (default `openai/gpt-oss-20b`).
-- LM Studio: set `LM_STUDIO_API_URL` (e.g., `http://localhost:1234/v1`) and set `OPENAI_MODEL` to your local model's name. When using LM Studio, if the model name begins with `openai/`, the prefix is removed automatically.
-
-Behavior details:
-- The bot passes a compact context (up to the last 5 interactions and the current exchange) to the LLM and requests ONLY a JSON array of up to 5 short, stable facts.
-- Facts should be persistent (avoid temporary moods, fleeting context) and verifiable from the conversation.
-- New facts are deduplicated against existing ones before being saved to `user-memory.json`.
-- If LLM extraction errors or returns invalid JSON, the bot falls back to regex-based extraction.
-
-Notes:
-- Manual fact management is always available via `!fact add <fact>` and `!memory view/delete`.
-- Interactions in memory are bounded (last 10 are kept) to prevent unbounded growth.
-
-## Image Processing and Vision
-
-The bot supports multimodal prompts with image attachments when using `!llm`.
-
-How it works under the hood (bot.js):
-- Attachment detection: Only image files are included. The bot checks either the attachment content type or the filename extension (png, jpg/jpeg, gif, webp, bmp, tiff). Duplicate URLs are removed and a maximum of 5 images is processed per request.
-- Logging: The bot logs the list of image URLs it is about to process to aid troubleshooting.
-- Prompt behavior: For image analysis, the bot crafts a special system instruction to:
-  - Analyze only the images attached to the current message
-  - Avoid relying on or referencing older images or previous results
-  - Avoid including image URLs or image markdown in the reply
-  The output is additionally sanitized to remove any leaked image URLs or markdown link forms.
-- Context policy: For image requests, user memory and recent carryover context are not injected to reduce bias in visual descriptions.
-- Model backends:
-  - OpenAI API: Image URLs are sent directly as `image_url` content parts in the Chat Completions request.
-  - LM Studio: Image URLs are fetched by the bot and converted to base64 data URLs (data:<mime>;base64,...) before being sent, because some LM Studio models expect base64 in the `url` field.
-    - Guardrail: Each image has a ~10 MB size limit; oversized or failed downloads are skipped. If all conversions fail, the bot falls back to a text-only prompt and tells the model that images could not be loaded.
-- Streaming: Responses are streamed and edited in place, with long outputs split into Discord-safe chunks (<=2000 characters).
-
-Tips:
-- If your model cannot handle images, simply don’t attach any. The bot will behave as a text-only assistant.
-- If you see errors when using LM Studio with images, check that the LM Studio server is running and try smaller images. Review the console logs for details.
-
-## API Endpoints
-
-The bot also exposes a simple REST API:
-
-- `POST /notify/add` - Add a user to the notification list
-- `POST /notify/remove` - Remove a user from the notification list
-- `POST /send` - Send a message to a specific channel
+- user-memory.json: stores long-term user data (facts, preferences, history)
+- data directory: available for additional persistence (mounted in Docker)
+- env.local: environment configuration (never commit secrets)
 
 ## Troubleshooting
 
-If you encounter issues:
+General:
+- Verify env.local values and that the bot has required Discord permissions/intents.
+- Watch the console logs for errors on startup and when issuing commands.
 
-### General Troubleshooting
-1. Make sure your environment variables are set correctly
-2. Verify that the bot has the necessary permissions in your Discord server
-3. Check the console logs for any error messages
+OpenAI:
+- Ensure a valid API key and correct model name; check account quota/credits.
 
-### OpenAI API Troubleshooting
-1. Check that your OpenAI API key is valid
-2. Verify that the model you're trying to use exists and is available to your account
-3. Check if you have sufficient API credits
+LM Studio:
+- Confirm Local Server is running and LM_STUDIO_API_URL matches.
+- Ensure a model is loaded; try smaller models if timeouts occur.
+- If your OPENAI_MODEL starts with openai/, the prefix is automatically removed for LM Studio.
 
-### LM Studio Troubleshooting
-1. Make sure LM Studio is running and the API server is started
-2. Verify that the LM_STUDIO_API_URL in your env.local file matches the URL shown in LM Studio
-3. Check that a model is properly loaded in LM Studio
-4. If you get timeout errors, your model might be too large for your hardware - try a smaller model
-5. Ensure the model name in your env.local file matches the name in LM Studio
-6. Check LM Studio logs for any errors
-7. Try restarting the LM Studio server if it becomes unresponsive
+User facts:
+- FACTS_VIA_LLM must be true to enable LLM extraction, otherwise regex fallback.
+- No new facts may simply mean there weren’t stable facts to add.
+- Ensure user-memory.json is writable by the bot process.
 
-### User Facts Extraction Troubleshooting
-1. LLM not used: Ensure `FACTS_VIA_LLM=true` and either `OPENAI_API_KEY` is set or `LM_STUDIO_API_URL` is reachable.
-2. Model name with LM Studio: If your `OPENAI_MODEL` starts with `openai/`, the bot will automatically strip the prefix for LM Studio.
-3. No new facts: The LLM may have determined there are no persistent facts to add, or it produced invalid JSON; the bot then falls back to regex.
-4. Duplicates: The bot deduplicates facts against stored ones; identical facts won’t be re-added.
-5. Storage file: Verify that `user-memory.json` is writable by the process.
+Quiz:
+- “My answer wasn’t counted”: send only A–F (no extra text) within the time limit; look for the ✅ reaction.
+- “A quiz is already running”: only one quiz per channel at a time.
+- “I cannot start a quiz”: cooldown active; wait until the displayed time.
+- “No category shown”: question lacks category in the JSON.
 
-## Dependencies
+## FAQ
 
-- discord.js - Discord API client
-- express - Web server for API endpoints
-- openai - OpenAI API client
-- dotenv - Environment variable management
-- cors - Cross-origin resource sharing support
-# bbot-server
+- Which Node.js version? Node 18+ recommended.
+- How do I change the bot’s persona? Edit ASSISTANT_ROLE and SYSTEM_PROMPT in env.local.
+- Does image analysis include my memory? No; to avoid bias, image prompts exclude memory.
+- Where are my data stored? In user-memory.json next to the bot, and in Docker volumes if used.
 
-## Quiz-Konfiguration
+## License
 
-Die Antwortzeit pro Frage und die Start-Sperrzeit (Cooldown) für das Quiz sind konfigurierbar.
-
-- Antwortzeit pro Frage setzen (Sekunden):
-  
-  QUIZ_ANSWER_SECONDS=20
-  
-  Ersetze `20` durch die gewünschte Anzahl an Sekunden. Mindestwert: 5 Sekunden. Standard: 20 Sekunden.
-
-- Cooldown für Quiz-Start setzen (Minuten):
-  
-  QUIZ_COOLDOWN_MINUTES=60
-  
-  Ersetze `60` durch die gewünschte Anzahl an Minuten. Mindestwert: 1 Minute. Standard: 60 Minuten.
-
-- Wirkung im Bot:
-  - Der Bot akzeptiert Antworten nur innerhalb des gesetzten Zeitfensters pro Frage.
-  - Die Quiz-Frage zeigt die eingestellte Antwortzeit in Sekunden an.
-  - Ein Nutzer kann nur alle `QUIZ_COOLDOWN_MINUTES` Minute(n) ein neues Quiz starten. Bei Verstoß zeigt der Bot die verbleibende Wartezeit und die Uhrzeit, ab wann es wieder möglich ist.
-
-Beispiel `env.local` Auszug:
-
-DISCORD_BOT_TOKEN=...
-BOT_PORT=4000
-QUIZ_ANSWER_SECONDS=30
-QUIZ_COOLDOWN_MINUTES=60
-
-## Befehle
-
-- `!quiz [Anzahl]` — Startet ein Quiz im Kanal (bis zu 5 Fragen, Standard 5). Alle können antworten. Bonus +2 Punkte, wenn alle Antworten korrekt sind.
-- `!toplist` — Zeigt die Top‑Nutzer nach Quiz‑Punkten.
-- Hinweis: Ein Nutzer kann nur alle `QUIZ_COOLDOWN_MINUTES` Minute(n) ein Quiz starten.
-
-## Quiz – Nutzung und Details
-
-Dieser Abschnitt beschreibt alle wichtigen Informationen zum Quiz-Feature des Bots.
-
-- Starten: `!quiz [Anzahl]`
-  - Anzahl = 1 bis 5 Fragen (Standard: 5, wenn nicht angegeben)
-  - In einem Kanal kann immer nur ein Quiz gleichzeitig laufen. Versuchst du ein weiteres zu starten, erhältst du einen Hinweis.
-- Antworten:
-  - Tippe einfach den Buchstaben deiner Antwort (A, B, C, …) direkt in den Kanal.
-  - Bitte nicht auf die Frage „antworten/quoten“ (kein Reply). Nur das reine A/B/C/… im Kanal senden.
-  - Es zählt nur deine erste gültige Antwort pro Frage.
-  - Wenn der Bot deine Antwort registriert hat, reagiert er mit einem ✅ auf deine Nachricht.
-- Kategorie-Anzeige:
-  - Enthält eine Frage im JSON eine `category`, wird sie in der Fragestellung mit angezeigt (z. B. „[Kategorie: Programmierung]“).
-- Zeitlimit pro Frage:
-  - Das Zeitlimit wird pro Frage in Sekunden angezeigt und über `QUIZ_ANSWER_SECONDS` gesteuert.
-  - Innerhalb dieses Fensters kannst du antworten; danach wird die richtige Lösung angezeigt und die Runde beendet.
-- Punkte & Bonus:
-  - Für jede richtige Antwort erhältst du 1 Punkt.
-  - Wenn du in einem Quiz-Durchlauf (Session) alle Fragen richtig beantwortest, bekommst du zusätzlich +2 Bonuspunkte.
-  - Punkte werden dauerhaft pro Nutzer gespeichert und fließen in die Topliste ein.
-- Topliste:
-  - `!toplist` zeigt die besten Nutzer nach gesamten Quiz‑Punkten (serverweit).
-- Cooldown (Spam-Schutz):
-  - Du kannst nur alle `QUIZ_COOLDOWN_MINUTES` Minute(n) ein neues Quiz starten.
-  - Versuchst du es früher, sagt dir der Bot, wie lange du noch warten musst und ab welcher Uhrzeit es wieder möglich ist.
-- Verhalten bei Erwähnungen:
-  - Während ein Quiz in einem Kanal läuft, ignoriert der Bot @Erwähnungen dort, um die Quiz-Antworten nicht zu stören.
-
-### Fragenkatalog (quiz-questions.json)
-
-- Ort der Datei: `quiz-questions.json` im Projektstamm.
-- Format: Eine Liste von Fragen, jede Frage hat folgende Struktur:
-
-```
-{
-  "category": "Programmierung",          // optional, wird in der Anzeige gezeigt
-  "question": "Deine Frage als Text …",   // erforderlich
-  "choices": ["A1", "A2", "A3", "A4"],  // erforderlich, 2–6 Antwortmöglichkeiten
-  "answerIndex": 1                         // erforderlich, 0-basierter Index der richtigen Antwort
-}
-```
-
-- Beispiel:
-
-```
-{
-  "category": "Programmierung",
-  "question": "Welche Array-Methode filtert Elemente?",
-  "choices": ["map", "forEach", "filter", "reduce"],
-  "answerIndex": 2
-}
-```
-
-- Hinweise:
-  - Es werden pro Quiz-Durchlauf zufällige Fragen aus dieser Datei gewählt.
-  - Maximal werden 5 Fragen pro Quiz gestellt (oder weniger, wenn du `!quiz 3` angibst).
-  - Achte darauf, dass `answerIndex` innerhalb der `choices` liegt.
-  - Unterstützt werden Antwortoptionen A–F (max. 6).
-
-### Umgebungsvariablen (Quiz)
-
-- `QUIZ_ANSWER_SECONDS` (Standard 20, Minimum 5)
-  - Steuert das Zeitfenster pro Frage in Sekunden.
-- `QUIZ_COOLDOWN_MINUTES` (Standard 60, Minimum 1)
-  - Steuert den Cooldown, wie oft ein Nutzer ein neues Quiz starten darf.
-
-Beispiel `env.local` (Ausschnitt):
-
-```
-DISCORD_BOT_TOKEN=…
-BOT_PORT=4000
-QUIZ_ANSWER_SECONDS=30
-QUIZ_COOLDOWN_MINUTES=60
-```
-
-### Troubleshooting (Quiz)
-
-- „Meine Antwort wurde nicht gezählt“:
-  - Stelle sicher, dass du NUR den Buchstaben (A–F) geschickt hast (ohne zusätzlichen Text) und innerhalb der Zeit.
-  - Prüfe, ob der Bot mit ✅ reagiert hat. Wenn nicht, war die Antwort evtl. zu spät oder keine gültige Option.
-- „Es läuft schon ein Quiz“:
-  - In einem Kanal kann nur eine Quiz-Session gleichzeitig aktiv sein. Warte, bis sie endet.
-- „Ich kann kein Quiz starten“:
-  - Der Cooldown verhindert zu häufige Starts. Warte bis zur angegebenen Uhrzeit im Hinweis des Bots.
-- „Frage zeigt keine Kategorie“:
-  - Prüfe, ob die Frage im JSON ein Feld `category` enthält. Ist es nicht vorhanden, wird keine Kategorie angezeigt.
+ISC (see package.json).
