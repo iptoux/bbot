@@ -323,14 +323,16 @@ client.on("messageCreate", async (message) => {
             }
             results.push({ uid, correct, points, bonus });
         });
-        // Persist points and build scoreboard lines
+        // Persist points and build scoreboard lines (ordered by points desc)
+        // Sort results by total points (including bonus), then by correct answers, then by userId for stability
+        results.sort((a, b) => (b.points - a.points) || (b.correct - a.correct) || String(a.uid).localeCompare(String(b.uid)));
         const lines = [];
         for (const r of results) {
             const member = await message.guild.members.fetch(r.uid).catch(() => null);
-            const uname = member?.user?.username || null;
-            await addQuizPoints(r.uid, uname, r.points);
+            const display = member?.displayName || null;
+            await addQuizPoints(r.uid, display, r.points);
             const bonusTxt = r.bonus ? ` (+${r.bonus} Bonus)` : '';
-            lines.push(`- ${member ? member.user.username : 'User'}: ${r.correct}/${totalQ} richtig, +${r.points} Punkte${bonusTxt}`);
+            lines.push(`- ${display || 'User'}: ${r.correct}/${totalQ} richtig, +${r.points} Punkte${bonusTxt}`);
         }
         session.active = false;
         quizSessions.delete(channelId);
@@ -347,7 +349,13 @@ client.on("messageCreate", async (message) => {
         if (!tops.length) {
             return message.reply("Noch keine Quiz-Punkte. Starte mit !quiz");
         }
-        const lines = tops.map((t, i) => `${i + 1}. ${t.username || 'User ' + t.userId}: ${t.quizPoints} Punkte`);
+        const lines = [];
+        for (let i = 0; i < tops.length; i++) {
+            const t = tops[i];
+            const member = await message.guild.members.fetch(t.userId).catch(() => null);
+            const name = member?.displayName || `User ${t.userId}`;
+            lines.push(`${i + 1}. ${name}: ${t.quizPoints} Punkte`);
+        }
         return message.reply(["Top Quiz-Spieler:", ...lines].join('\n'));
     }
 
