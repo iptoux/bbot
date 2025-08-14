@@ -849,4 +849,12 @@ app.post("/send", async (req, res) => {
 
 // Start bot + API
 client.login(TOKEN);
+// Log effective quiz settings
+try {
+    console.log("QUIZ_ANSWER_SECONDS:", QUIZ_ANSWER_SECONDS, "(min 5)");
+    console.log("QUIZ_COOLDOWN_MINUTES:", QUIZ_COOLDOWN_MINUTES, "(min 1)");
+} catch (e) {
+    // no-op
+}
+
 app.listen(PORT, () => console.log(`Bot API listening on port ${PORT}`));
