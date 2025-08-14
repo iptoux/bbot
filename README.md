@@ -82,30 +82,34 @@ to generate responses. The bot can remember users (facts, preferences, recent in
 ## Configuration (env.local)
 
 Create a file env.local in the project root. Example minimal template:
-
+```bash
 DISCORD_BOT_TOKEN=your_discord_bot_token
 BOT_PORT=4000
+```
 
 # Choose one backend:
-# OpenAI
+### OpenAI
+```bash
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=openai/gpt-oss-20b
+```
 
-# or LM Studio
-# LM_STUDIO_API_URL=http://localhost:1234/v1
+### or LM Studio
+```bash
+LM_STUDIO_API_URL=http://localhost:1234/v1
+
+```
 
 # Memory extraction via LLM (optional)
+```bash
 FACTS_VIA_LLM=true
+```
 
 # Assistant behavior
+```bash
 ASSISTANT_ROLE=You are a helpful assistant.
 SYSTEM_PROMPT=Provide direct responses without showing your thinking process.
-
-# Quiz settings (see section "Quiz settings")
-# Time limit per question in seconds (min 5, default 20 if unset or lower)
-# QUIZ_ANSWER_SECONDS=20
-# Cooldown between quiz starts per user in minutes (min 1, default 60 if unset or lower)
-# QUIZ_COOLDOWN_MINUTES=60
+```
 
 Variables explained:
 - DISCORD_BOT_TOKEN: Your Discord bot token.
