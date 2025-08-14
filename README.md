@@ -97,7 +97,7 @@ OPENAI_MODEL=openai/gpt-oss-20b
 ### or LM Studio
 ```bash
 LM_STUDIO_API_URL=http://localhost:1234/v1
-
+OPENAI_MODEL=gemma-3-12b-it
 ```
 
 # Memory extraction via LLM (optional)
@@ -144,16 +144,20 @@ Where to configure:
 - The bot logs the effective values (after applying minimums) at startup for visibility.
 
 Example env.local additions:
-
+```bash
 QUIZ_ANSWER_SECONDS=30
 QUIZ_COOLDOWN_MINUTES=60
+```
 
-## Run
+# Run
 
 ### Node.js
 
-- Start: node bot.js
-- The bot logs key environment configuration at startup for diagnostics.
+- Start: 
+```bash
+node bot.js
+```
+The bot logs key environment configuration at startup for diagnostics.
 
 ### Docker / Docker Compose
 
@@ -171,10 +175,11 @@ Steps:
    docker-compose down
 
 Persistent volumes (docker-compose.yml):
-- ./env.local -> /app/env.local
-- ./user-memory.json -> /app/user-memory.json
-- ./data -> /app/data
-
+```bash
+./env.local -> /app/env.local
+./user-memory.json -> /app/user-memory.json
+./data -> /app/data
+```
 ## Bot Commands
 
 !cmd
@@ -221,12 +226,14 @@ Examples:
 Question catalog (quiz-questions.json):
 - File location: quiz-questions.json at project root.
 - Structure example:
+```JSON
   {
-    "category": "Programming",             // optional
-    "question": "Which array method filters elements?", // required
-    "choices": ["map", "forEach", "filter", "reduce"], // 2–6 options
-    "answerIndex": 2                         // 0-based index
-  }
+  "category": "Programming",             // optional
+  "question": "Which array method filters elements?", // required
+  "choices": ["map", "forEach", "filter", "reduce"], // 2–6 options
+  "answerIndex": 2                         // 0-based index
+} 
+```
 - Up to 5 questions are asked per quiz (or fewer if you use !quiz 3).
 - Supported options: A–F (max 6 choices).
 - Ensure answerIndex is within choices range.
