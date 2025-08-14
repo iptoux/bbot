@@ -43,6 +43,14 @@ const LM_STUDIO_API_URL = process.env.LM_STUDIO_API_URL;
 const ASSISTANT_ROLE = process.env.ASSISTANT_ROLE || "You are a helpful assistant.";
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT || "Provide direct responses without showing your thinking process. Do not include any deliberation, multiple options, or reasoning in your response. Just provide the final answer.";
 
+// Quiz configuration: answer time limit (seconds)
+const QUIZ_ANSWER_SECONDS = Math.max(5, parseInt(process.env.QUIZ_ANSWER_SECONDS, 10) || 20);
+const QUIZ_ANSWER_TIME_MS = QUIZ_ANSWER_SECONDS * 1000;
+
+// Quiz configuration: per-user start cooldown (minutes)
+const QUIZ_COOLDOWN_MINUTES = Math.max(1, parseInt(process.env.QUIZ_COOLDOWN_MINUTES, 10) || 60);
+const QUIZ_COOLDOWN_MS = QUIZ_COOLDOWN_MINUTES * 60 * 1000;
+
 const jokes = {
     wordpress: [
         "Das Ikea-Regal unter den CMS – passt immer irgendwie, wackelt aber manchmal.",
@@ -187,6 +195,7 @@ function formatQuestion(q, index, total) {
     const categorySuffix = q.category ? ` [Kategorie: ${q.category}]` : '';
     lines.push(`Frage ${index + 1}/${total}${categorySuffix}: ${q.question}`);
     lines.push(q.choices.map((opt, i) => `${letters[i]}. ${opt}`).join('\n'));
+    lines.push(`Du hast ${QUIZ_ANSWER_SECONDS} Sekunde(n) Zeit zu antworten.`);
     lines.push('Sende den Buchstaben deiner Antwort (A, B, C, ...) einfach hier in den Kanal. Nicht auf die Frage antworten/quoten. Nur deine erste Antwort zählt. Wenn deine Antwort gezählt wurde, reagiert der Bot mit ✅.');
     return lines.join('\n');
 }
@@ -217,7 +226,7 @@ client.on("messageCreate", async (message) => {
             return; // do not send generic mention reply during quiz
         }
         console.log("Bot was mentioned in a message");
-        return message.reply("Hallo! Ich bin dein Bot-Assistent. Du kannst den Befehl !llm nutzen, gefolgt von deiner Frage.");
+        return message.reply("😏 Oh, du hast mich getaggt… Mutig. Versuch mal !cmd.");
     }
 
     // QUIZ COMMANDS
@@ -226,19 +235,18 @@ client.on("messageCreate", async (message) => {
         if (quizSessions.has(channelId)) {
             return message.reply("In diesem Kanal läuft bereits ein Quiz. Bitte warte, bis es beendet ist.");
         }
-        // Rate limit: one quiz start per user per Stunde (60 Minuten)
+        // Rate limit: one quiz start per user per configured cooldown (minutes)
         const starterId = message.author.id;
         const now = Date.now();
         const last = lastQuizStartByUser.get(starterId) || 0;
-        const COOLDOWN_MS = 60 * 60 * 1000; // 60 Minuten
         const elapsed = now - last;
-        if (elapsed < COOLDOWN_MS) {
-            const remainingMs = COOLDOWN_MS - elapsed;
+        if (elapsed < QUIZ_COOLDOWN_MS) {
+            const remainingMs = QUIZ_COOLDOWN_MS - elapsed;
             const remainingMin = Math.max(1, Math.ceil(remainingMs / 60000));
             const allowedAt = new Date(now + remainingMs);
             const hh = String(allowedAt.getHours()).padStart(2, '0');
             const mm = String(allowedAt.getMinutes()).padStart(2, '0');
-            return message.reply(`Du kannst nur einmal pro Stunde ein Quiz starten. Bitte warte noch ca. ${remainingMin} Minute(n) (bis ${hh}:${mm}).`);
+            return message.reply(`Du kannst nur alle ${QUIZ_COOLDOWN_MINUTES} Minute(n) ein Quiz starten. Bitte warte noch ca. ${remainingMin} Minute(n) (bis ${hh}:${mm}).`);
         }
         // Record this start time
         lastQuizStartByUser.set(starterId, now);
@@ -270,7 +278,7 @@ client.on("messageCreate", async (message) => {
             await message.channel.send(prompt);
             const letters = ['A','B','C','D','E','F'];
             const filter = m => !m.author.bot && letters.includes(m.content.trim().toUpperCase()) && m.channel.id === channelId;
-            const collected = await message.channel.awaitMessages({ filter, time: 20000 }); // 20s per question
+            const collected = await message.channel.awaitMessages({ filter, time: QUIZ_ANSWER_TIME_MS }); // konfigurierbare Zeit pro Frage
             const map = new Map();
             collected.forEach(m => {
                 const uid = m.author.id;
@@ -808,7 +816,7 @@ client.on("messageCreate", async (message) => {
             "**`!quiz [Anzahl]`** - Starte ein Quiz im Kanal (bis zu 5 Fragen, Standard 5). Alle können antworten.",
             "**`!toplist`** - Zeige die Top‑Nutzer nach Quiz‑Punkten",
             "",
-            "Hinweis: Du kannst nur einmal pro Stunde ein Quiz starten."
+            `Hinweis: Du kannst nur alle ${QUIZ_COOLDOWN_MINUTES} Minute(n) ein Quiz starten.`
         ].join("\n");
         
         message.reply(commandsList);
