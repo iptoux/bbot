@@ -278,46 +278,43 @@ client.on("messageCreate", async (message) => {
         }
     }
 
-
-
-    if (message.content.toLowerCase().includes("angular")) {
+    else if (message.content.toLowerCase().includes("angular")) {
         const responseMessage = await message.reply(randomJoke("angular"));
     }
-
-    if (message.content.toLowerCase().includes("concrete5")) {
+    else if (message.content.toLowerCase().includes("concrete5")) {
         const responseMessage = await message.reply(randomJoke("concrete5"));
     }
 
-    if (message.content.toLowerCase().includes("css")) {
+    else if (message.content.toLowerCase().includes("css")) {
         const responseMessage = await message.reply(randomJoke("css"));
     }
 
-    if (message.content.toLowerCase().includes("django")) {
+    else if (message.content.toLowerCase().includes("django")) {
         const responseMessage = await message.reply(randomJoke("django"));
     }
 
 
-    if (message.content.toLowerCase().includes("filemaker")) {
+    else if (message.content.toLowerCase().includes("filemaker")) {
         const responseMessage = await message.reply(randomJoke("filemaker"));
     }
 
-    if (message.content.toLowerCase().includes("html")) {
+    else if (message.content.toLowerCase().includes("html")) {
         const responseMessage = await message.reply(randomJoke("html"));
     }
 
-    if (message.content.toLowerCase().includes("javascript")) {
+    else if (message.content.toLowerCase().includes("javascript")) {
         const responseMessage = await message.reply(randomJoke("javascript"));
     }
 
-    if (message.content.toLowerCase().includes("php")) {
+    else if (message.content.toLowerCase().includes("php")) {
         const responseMessage = await message.reply(randomJoke("php"));
     }
 
-    if (message.content.toLowerCase().includes("typescript")) {
+    else if (message.content.toLowerCase().includes("typescript")) {
         const responseMessage = await message.reply(randomJoke("typescript"));
     }
 
-    if (message.content.toLowerCase().includes("wordpress")) {
+    else if (message.content.toLowerCase().includes("wordpress")) {
         const responseMessage = await message.reply(randomJoke("wordpress"));
     }
 
