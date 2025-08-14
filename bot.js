@@ -182,13 +182,25 @@ client.on("messageCreate", async (message) => {
         return message.reply("Hello! I'm your bot assistant. You can use the !llm command followed by your query to get a response.");
     }
 
-    if (message.content.startsWith("!llm") && message.channel.name === "programmierer-chat") {
+    if (message.content.startsWith("!llm")) {
         // Extract the prompt from the message
         const prompt = message.content.substring(5).trim();
+
+        // Collect image attachments (only images)
+        const imageUrls = [...message.attachments.values()]
+            .filter(att => {
+                const ct = (att.contentType || "").toLowerCase();
+                const name = (att.name || "").toLowerCase();
+                return ct.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i.test(name);
+            })
+            .map(att => att.url)
+            // Deduplicate and keep a reasonable limit
+            .filter((url, idx, arr) => arr.indexOf(url) === idx)
+            .slice(0, 5);
         
-        // If no prompt is provided, ask for one
-        if (!prompt) {
-            return message.reply("Please provide a message after !llm. Example: !llm Tell me a joke");
+        // If no prompt and no images, ask for input
+        if (!prompt && imageUrls.length === 0) {
+            return message.reply("Please provide a message after !llm or attach image(s). Example: !llm Tell me a joke");
         }
         
         try {
@@ -218,6 +230,26 @@ client.on("messageCreate", async (message) => {
                 console.log(`Retrieved context for user ${username} (${userId})`);
             }
             
+            // Prepare user message content, including images if present
+            let userMessage;
+            if (imageUrls.length > 0) {
+                if (isUsingLMStudio) {
+                    // Fallback for LM Studio: append image URLs to the text prompt
+                    const promptWithLinks = (prompt || "Bitte analysiere das/die Bild(er).") +
+                        "\n\nAttached images:\n" + imageUrls.join("\n");
+                    userMessage = { role: "user", content: promptWithLinks };
+                } else {
+                    // OpenAI Chat Completions with multimodal content
+                    const parts = [
+                        { type: "text", text: prompt || "Bitte analysiere das/die Bild(er)." },
+                        ...imageUrls.map(url => ({ type: "image_url", image_url: { url } }))
+                    ];
+                    userMessage = { role: "user", content: parts };
+                }
+            } else {
+                userMessage = { role: "user", content: prompt };
+            }
+
             // Create a stream for the OpenAI response
             const stream = await openai.chat.completions.create({
                 model: modelName,
@@ -226,15 +258,39 @@ client.on("messageCreate", async (message) => {
                         role: "system", 
                         content: systemMessage
                     },
-                    { role: "user", content: prompt }
+                    userMessage
                 ],
                 stream: true,
             });
             
             console.log("Stream created successfully");
             
+            // Utility to split long text into Discord-safe chunks (<= 2000 chars)
+            function splitDiscordMessage(text, limit = 2000) {
+                const chunks = [];
+                let remaining = text || "";
+                while (remaining.length > 0) {
+                    if (remaining.length <= limit) {
+                        chunks.push(remaining);
+                        break;
+                    }
+                    let sliceEnd = limit;
+                    const newlinePos = remaining.lastIndexOf("\n", limit);
+                    const spacePos = remaining.lastIndexOf(" ", limit);
+                    if (newlinePos > limit * 0.6) {
+                        sliceEnd = newlinePos + 1; // include newline, break after it
+                    } else if (spacePos > limit * 0.6) {
+                        sliceEnd = spacePos + 1; // break after space
+                    }
+                    chunks.push(remaining.slice(0, sliceEnd).trimEnd());
+                    remaining = remaining.slice(sliceEnd).replace(/^\s+/, "");
+                }
+                return chunks;
+            }
+
             let responseContent = "";
             let lastUpdateTime = Date.now();
+            let sentChunkCount = 0; // how many chunks we've already sent (first via edit, rest via new messages)
             
             // Process the stream
             for await (const chunk of stream) {
@@ -243,10 +299,25 @@ client.on("messageCreate", async (message) => {
                 if (content) {
                     responseContent += content;
                     
-                    // Update the message every 1 second or when we have a substantial amount of new content
+                    // Update the message every 1 second or upon newline
                     const currentTime = Date.now();
                     if (currentTime - lastUpdateTime > 1000 || content.includes("\n")) {
-                        await responseMessage.edit(responseContent);
+                        const chunks = splitDiscordMessage(responseContent);
+                        // Ensure first chunk updates the original message
+                        if (chunks.length > 0) {
+                            if (sentChunkCount === 0) {
+                                await responseMessage.edit(chunks[0]);
+                                sentChunkCount = 1;
+                            } else {
+                                // Update the first message only if it changed (optional optimization)
+                                await responseMessage.edit(chunks[0]);
+                            }
+                        }
+                        // Send any new chunks beyond what we've already sent
+                        for (let i = sentChunkCount; i < chunks.length; i++) {
+                            await message.channel.send(chunks[i]);
+                        }
+                        sentChunkCount = Math.max(sentChunkCount, chunks.length);
                         lastUpdateTime = currentTime;
                     }
                 }
@@ -254,7 +325,15 @@ client.on("messageCreate", async (message) => {
             
             // Final update to ensure all content is displayed
             if (responseContent) {
-                await responseMessage.edit(responseContent);
+                const chunks = splitDiscordMessage(responseContent);
+                if (chunks.length > 0) {
+                    // Ensure the first message is updated to the first chunk
+                    await responseMessage.edit(chunks[0]);
+                    // Send any remaining chunks not yet sent
+                    for (let i = sentChunkCount; i < chunks.length; i++) {
+                        await message.channel.send(chunks[i]);
+                    }
+                }
                 
                 // Record the interaction and extract facts
                 await addUserInteraction(userId, username, prompt, responseContent);
