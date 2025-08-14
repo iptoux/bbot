@@ -198,6 +198,11 @@ client.on("messageCreate", async (message) => {
             .filter((url, idx, arr) => arr.indexOf(url) === idx)
             .slice(0, 5);
         
+        // Log the images we are about to send for analysis (helps debug stale image issues)
+        if (imageUrls.length > 0) {
+            console.log("Images attached for this request:", imageUrls);
+        }
+        
         // If no prompt and no images, ask for input
         if (!prompt && imageUrls.length === 0) {
             return message.reply("Please provide a message after !llm or attach image(s). Example: !llm Tell me a joke");
@@ -223,23 +228,60 @@ client.on("messageCreate", async (message) => {
             const username = message.author.username;
             const userContext = await generateUserContext(userId);
             
-            // Create system message with user context
+            // Create system message with user context or image-specific instruction
             let systemMessage = `${ASSISTANT_ROLE} ${SYSTEM_PROMPT}`;
-            if (userContext) {
+            if (imageUrls.length > 0) {
+                // For image analysis, avoid bias from prior stored context
+                systemMessage += "\n\nImportant: Only analyze the images attached to THIS message (the URLs listed in the user content). Do not rely on or mention any previous images or earlier results. If the images are inaccessible, say so explicitly.";
+                // Also, never include the image(s) themselves or their URLs in your response
+                systemMessage += "\nDo not include or repeat any image URLs or image markdown in your reply. Describe what you see in words only.";
+            } else if (userContext) {
                 systemMessage += `\n\nUser Information:\n${userContext}`;
                 console.log(`Retrieved context for user ${username} (${userId})`);
             }
             
             // Prepare user message content, including images if present
+            // For LM Studio, convert image URLs to base64 data URIs because LM Studio expects base64 in the `url` field
+            async function fetchAsDataUrl(url) {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) {
+                        throw new Error(`Failed to fetch image (${res.status})`);
+                    }
+                    const contentType = res.headers.get("content-type") || "application/octet-stream";
+                    const arrayBuffer = await res.arrayBuffer();
+                    // Guardrail: limit to ~10 MB to avoid huge payloads
+                    const MAX_BYTES = 10 * 1024 * 1024;
+                    if (arrayBuffer.byteLength > MAX_BYTES) {
+                        throw new Error(`Image too large (${arrayBuffer.byteLength} bytes)`);
+                    }
+                    const base64 = Buffer.from(arrayBuffer).toString("base64");
+                    return `data:${contentType};base64,${base64}`;
+                } catch (e) {
+                    console.error("Failed to convert image to data URL for LM Studio:", e);
+                    return null;
+                }
+            }
+
             let userMessage;
             if (imageUrls.length > 0) {
                 if (isUsingLMStudio) {
-                    // Fallback for LM Studio: append image URLs to the text prompt
-                    const promptWithLinks = (prompt || "Bitte analysiere das/die Bild(er).") +
-                        "\n\nAttached images:\n" + imageUrls.join("\n");
-                    userMessage = { role: "user", content: promptWithLinks };
+                    // Convert all images to data URIs
+                    const dataUrls = (await Promise.all(imageUrls.map(fetchAsDataUrl))).filter(Boolean);
+                    if (dataUrls.length === 0) {
+                        // If conversion failed, fall back to text-only prompt
+                        userMessage = { role: "user", content: prompt || "Bitte analysiere das/die Bild(er). (Hinweis: Bilder konnten nicht geladen werden)" };
+                    } else {
+                        userMessage = {
+                            role: "user",
+                            content: [
+                                { type: "text", text: prompt || "Bitte analysiere das/die Bild(er)." },
+                                ...dataUrls.map(url => ({ type: "image_url", image_url: { url } }))
+                            ]
+                        };
+                    }
                 } else {
-                    // OpenAI Chat Completions with multimodal content
+                    // OpenAI Chat Completions with multimodal content using remote URLs
                     const parts = [
                         { type: "text", text: prompt || "Bitte analysiere das/die Bild(er)." },
                         ...imageUrls.map(url => ({ type: "image_url", image_url: { url } }))
@@ -264,6 +306,33 @@ client.on("messageCreate", async (message) => {
             });
             
             console.log("Stream created successfully");
+            
+            // Utility to sanitize the model response so it does not include image URLs from attachments
+            function sanitizeResponse(text) {
+                if (!text) return "";
+                let sanitized = text;
+                if (imageUrls && imageUrls.length) {
+                    for (const url of imageUrls) {
+                        if (!url) continue;
+                        // Remove direct occurrences of the URL
+                        const esc = url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                        const directUrlRegex = new RegExp(esc, "g");
+                        sanitized = sanitized.replace(directUrlRegex, "");
+                        // Remove markdown image syntax ![alt](url)
+                        const mdImageRegex = new RegExp(`!\\[[^\n\]]*\\]\\(${esc}[^)]*\\)`, "g");
+                        sanitized = sanitized.replace(mdImageRegex, "");
+                        // Remove generic markdown link to the image [text](url)
+                        const mdLinkRegex = new RegExp(`\\[[^\n\]]*\\]\\(${esc}[^)]*\\)`, "g");
+                        sanitized = sanitized.replace(mdLinkRegex, "");
+                        // Remove angle-bracketed links <url>
+                        const angleRegex = new RegExp(`<${esc}>`, "g");
+                        sanitized = sanitized.replace(angleRegex, "");
+                    }
+                    // Collapse multiple spaces/newlines caused by removals
+                    sanitized = sanitized.replace(/[ \t]{2,}/g, " ").replace(/[\n]{3,}/g, "\n\n").trim();
+                }
+                return sanitized;
+            }
             
             // Utility to split long text into Discord-safe chunks (<= 2000 chars)
             function splitDiscordMessage(text, limit = 2000) {
@@ -302,7 +371,8 @@ client.on("messageCreate", async (message) => {
                     // Update the message every 1 second or upon newline
                     const currentTime = Date.now();
                     if (currentTime - lastUpdateTime > 1000 || content.includes("\n")) {
-                        const chunks = splitDiscordMessage(responseContent);
+                        const sanitized = sanitizeResponse(responseContent);
+                        const chunks = splitDiscordMessage(sanitized);
                         // Ensure first chunk updates the original message
                         if (chunks.length > 0) {
                             if (sentChunkCount === 0) {
@@ -325,7 +395,8 @@ client.on("messageCreate", async (message) => {
             
             // Final update to ensure all content is displayed
             if (responseContent) {
-                const chunks = splitDiscordMessage(responseContent);
+                const sanitizedFinal = sanitizeResponse(responseContent);
+                const chunks = splitDiscordMessage(sanitizedFinal);
                 if (chunks.length > 0) {
                     // Ensure the first message is updated to the first chunk
                     await responseMessage.edit(chunks[0]);
@@ -335,9 +406,9 @@ client.on("messageCreate", async (message) => {
                     }
                 }
                 
-                // Record the interaction and extract facts
-                await addUserInteraction(userId, username, prompt, responseContent);
-                await extractUserFacts(userId, prompt, responseContent);
+                // Record the interaction and extract facts (store sanitized content to avoid image links)
+                await addUserInteraction(userId, username, prompt, sanitizedFinal);
+                await extractUserFacts(userId, prompt, sanitizedFinal);
                 console.log(`Recorded interaction for user ${username} (${userId})`);
             } else {
                 await responseMessage.edit("No response generated. Please try again.");
