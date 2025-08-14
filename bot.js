@@ -28,7 +28,8 @@ import {
     formatUserDataForDisplay,
     deleteUserData,
     addUserFact,
-    setUserPreference
+    setUserPreference,
+    getLastInteractionIfRecent
 } from "./userMemory.js";
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -235,9 +236,20 @@ client.on("messageCreate", async (message) => {
                 systemMessage += "\n\nImportant: Only analyze the images attached to THIS message (the URLs listed in the user content). Do not rely on or mention any previous images or earlier results. If the images are inaccessible, say so explicitly.";
                 // Also, never include the image(s) themselves or their URLs in your response
                 systemMessage += "\nDo not include or repeat any image URLs or image markdown in your reply. Describe what you see in words only.";
-            } else if (userContext) {
-                systemMessage += `\n\nUser Information:\n${userContext}`;
-                console.log(`Retrieved context for user ${username} (${userId})`);
+            } else {
+                if (userContext) {
+                    systemMessage += `\n\nUser Information:\n${userContext}`;
+                    console.log(`Retrieved context for user ${username} (${userId})`);
+                }
+                // If the last interaction is recent (< 2 minutes), explicitly include it as carryover context
+                try {
+                    const lastRecent = await getLastInteractionIfRecent(userId, 120000);
+                    if (lastRecent) {
+                        systemMessage += `\n\nCarryover context (last exchange within 2 minutes):\n- Previous user message: ${lastRecent.message}\n- Bot's previous reply: ${lastRecent.response}\nInstruction: Continue the conversation based on this carryover; avoid re-greeting unless the user explicitly starts a new topic.`;
+                    }
+                } catch (e) {
+                    console.warn('Failed to compute carryover context:', e?.message || e);
+                }
             }
             
             // Prepare user message content, including images if present

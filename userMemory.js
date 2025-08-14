@@ -448,6 +448,35 @@ async function deleteUserData(userId) {
   return true;
 }
 
+function msSince(dateIso) {
+  const t = new Date(dateIso).getTime();
+  const now = Date.now();
+  if (isNaN(t)) return Number.POSITIVE_INFINITY;
+  return Math.max(0, now - t);
+}
+
+/**
+ * Return the last interaction if the user's previous exchange is recent.
+ * "Recent" defaults to <= 2 minutes (120_000 ms).
+ * @param {string} userId
+ * @param {number} thresholdMs
+ * @returns {Promise<null|{timestamp:string,message:string,response:string,ageMs:number}>}
+ */
+async function getLastInteractionIfRecent(userId, thresholdMs = 120000) {
+  if (!isInitialized) {
+    await initUserMemory();
+  }
+  const userData = await getUserMemory(userId);
+  const interactions = userData.interactions || [];
+  if (interactions.length === 0) return null;
+  const last = interactions[interactions.length - 1];
+  const ageMs = msSince(last.timestamp || userData.lastInteraction);
+  if (ageMs <= thresholdMs) {
+    return { ...last, ageMs };
+  }
+  return null;
+}
+
 export {
   initUserMemory,
   getUserMemory,
@@ -457,5 +486,6 @@ export {
   generateUserContext,
   extractUserFacts,
   formatUserDataForDisplay,
-  deleteUserData
+  deleteUserData,
+  getLastInteractionIfRecent
 };
