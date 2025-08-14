@@ -333,3 +333,126 @@ If you encounter issues:
 - openai - OpenAI API client
 - dotenv - Environment variable management
 - cors - Cross-origin resource sharing support
+# bbot-server
+
+## Quiz-Konfiguration
+
+Die Antwortzeit pro Frage und die Start-Sperrzeit (Cooldown) für das Quiz sind konfigurierbar.
+
+- Antwortzeit pro Frage setzen (Sekunden):
+  
+  QUIZ_ANSWER_SECONDS=20
+  
+  Ersetze `20` durch die gewünschte Anzahl an Sekunden. Mindestwert: 5 Sekunden. Standard: 20 Sekunden.
+
+- Cooldown für Quiz-Start setzen (Minuten):
+  
+  QUIZ_COOLDOWN_MINUTES=60
+  
+  Ersetze `60` durch die gewünschte Anzahl an Minuten. Mindestwert: 1 Minute. Standard: 60 Minuten.
+
+- Wirkung im Bot:
+  - Der Bot akzeptiert Antworten nur innerhalb des gesetzten Zeitfensters pro Frage.
+  - Die Quiz-Frage zeigt die eingestellte Antwortzeit in Sekunden an.
+  - Ein Nutzer kann nur alle `QUIZ_COOLDOWN_MINUTES` Minute(n) ein neues Quiz starten. Bei Verstoß zeigt der Bot die verbleibende Wartezeit und die Uhrzeit, ab wann es wieder möglich ist.
+
+Beispiel `env.local` Auszug:
+
+DISCORD_BOT_TOKEN=...
+BOT_PORT=4000
+QUIZ_ANSWER_SECONDS=30
+QUIZ_COOLDOWN_MINUTES=60
+
+## Befehle
+
+- `!quiz [Anzahl]` — Startet ein Quiz im Kanal (bis zu 5 Fragen, Standard 5). Alle können antworten. Bonus +2 Punkte, wenn alle Antworten korrekt sind.
+- `!toplist` — Zeigt die Top‑Nutzer nach Quiz‑Punkten.
+- Hinweis: Ein Nutzer kann nur alle `QUIZ_COOLDOWN_MINUTES` Minute(n) ein Quiz starten.
+
+## Quiz – Nutzung und Details
+
+Dieser Abschnitt beschreibt alle wichtigen Informationen zum Quiz-Feature des Bots.
+
+- Starten: `!quiz [Anzahl]`
+  - Anzahl = 1 bis 5 Fragen (Standard: 5, wenn nicht angegeben)
+  - In einem Kanal kann immer nur ein Quiz gleichzeitig laufen. Versuchst du ein weiteres zu starten, erhältst du einen Hinweis.
+- Antworten:
+  - Tippe einfach den Buchstaben deiner Antwort (A, B, C, …) direkt in den Kanal.
+  - Bitte nicht auf die Frage „antworten/quoten“ (kein Reply). Nur das reine A/B/C/… im Kanal senden.
+  - Es zählt nur deine erste gültige Antwort pro Frage.
+  - Wenn der Bot deine Antwort registriert hat, reagiert er mit einem ✅ auf deine Nachricht.
+- Kategorie-Anzeige:
+  - Enthält eine Frage im JSON eine `category`, wird sie in der Fragestellung mit angezeigt (z. B. „[Kategorie: Programmierung]“).
+- Zeitlimit pro Frage:
+  - Das Zeitlimit wird pro Frage in Sekunden angezeigt und über `QUIZ_ANSWER_SECONDS` gesteuert.
+  - Innerhalb dieses Fensters kannst du antworten; danach wird die richtige Lösung angezeigt und die Runde beendet.
+- Punkte & Bonus:
+  - Für jede richtige Antwort erhältst du 1 Punkt.
+  - Wenn du in einem Quiz-Durchlauf (Session) alle Fragen richtig beantwortest, bekommst du zusätzlich +2 Bonuspunkte.
+  - Punkte werden dauerhaft pro Nutzer gespeichert und fließen in die Topliste ein.
+- Topliste:
+  - `!toplist` zeigt die besten Nutzer nach gesamten Quiz‑Punkten (serverweit).
+- Cooldown (Spam-Schutz):
+  - Du kannst nur alle `QUIZ_COOLDOWN_MINUTES` Minute(n) ein neues Quiz starten.
+  - Versuchst du es früher, sagt dir der Bot, wie lange du noch warten musst und ab welcher Uhrzeit es wieder möglich ist.
+- Verhalten bei Erwähnungen:
+  - Während ein Quiz in einem Kanal läuft, ignoriert der Bot @Erwähnungen dort, um die Quiz-Antworten nicht zu stören.
+
+### Fragenkatalog (quiz-questions.json)
+
+- Ort der Datei: `quiz-questions.json` im Projektstamm.
+- Format: Eine Liste von Fragen, jede Frage hat folgende Struktur:
+
+```
+{
+  "category": "Programmierung",          // optional, wird in der Anzeige gezeigt
+  "question": "Deine Frage als Text …",   // erforderlich
+  "choices": ["A1", "A2", "A3", "A4"],  // erforderlich, 2–6 Antwortmöglichkeiten
+  "answerIndex": 1                         // erforderlich, 0-basierter Index der richtigen Antwort
+}
+```
+
+- Beispiel:
+
+```
+{
+  "category": "Programmierung",
+  "question": "Welche Array-Methode filtert Elemente?",
+  "choices": ["map", "forEach", "filter", "reduce"],
+  "answerIndex": 2
+}
+```
+
+- Hinweise:
+  - Es werden pro Quiz-Durchlauf zufällige Fragen aus dieser Datei gewählt.
+  - Maximal werden 5 Fragen pro Quiz gestellt (oder weniger, wenn du `!quiz 3` angibst).
+  - Achte darauf, dass `answerIndex` innerhalb der `choices` liegt.
+  - Unterstützt werden Antwortoptionen A–F (max. 6).
+
+### Umgebungsvariablen (Quiz)
+
+- `QUIZ_ANSWER_SECONDS` (Standard 20, Minimum 5)
+  - Steuert das Zeitfenster pro Frage in Sekunden.
+- `QUIZ_COOLDOWN_MINUTES` (Standard 60, Minimum 1)
+  - Steuert den Cooldown, wie oft ein Nutzer ein neues Quiz starten darf.
+
+Beispiel `env.local` (Ausschnitt):
+
+```
+DISCORD_BOT_TOKEN=…
+BOT_PORT=4000
+QUIZ_ANSWER_SECONDS=30
+QUIZ_COOLDOWN_MINUTES=60
+```
+
+### Troubleshooting (Quiz)
+
+- „Meine Antwort wurde nicht gezählt“:
+  - Stelle sicher, dass du NUR den Buchstaben (A–F) geschickt hast (ohne zusätzlichen Text) und innerhalb der Zeit.
+  - Prüfe, ob der Bot mit ✅ reagiert hat. Wenn nicht, war die Antwort evtl. zu spät oder keine gültige Option.
+- „Es läuft schon ein Quiz“:
+  - In einem Kanal kann nur eine Quiz-Session gleichzeitig aktiv sein. Warte, bis sie endet.
+- „Ich kann kein Quiz starten“:
+  - Der Cooldown verhindert zu häufige Starts. Warte bis zur angegebenen Uhrzeit im Hinweis des Bots.
+- „Frage zeigt keine Kategorie“:
+  - Prüfe, ob die Frage im JSON ein Feld `category` enthält. Ist es nicht vorhanden, wird keine Kategorie angezeigt.
