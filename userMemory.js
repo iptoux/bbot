@@ -2,8 +2,14 @@ import fs from 'fs/promises';
 import path from 'path';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { config as loadEnv } from 'dotenv';
+import OpenAI from 'openai';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+// Load environment variables (env.local) similarly to bot.js for standalone/test runs
+try {
+  loadEnv({ path: path.join(__dirname, 'env.local') });
+} catch {}
 const USER_MEMORY_FILE = path.join(__dirname, 'user-memory.json');
 
 // User memory schema:
@@ -30,6 +36,36 @@ const USER_MEMORY_FILE = path.join(__dirname, 'user-memory.json');
 // In-memory cache of user data
 let userMemoryCache = {};
 let isInitialized = false;
+
+// OpenAI / LM Studio configuration for fact extraction
+let openAiClient = null;
+function getOpenAIClient() {
+  if (openAiClient) return openAiClient;
+  const apiKey = process.env.OPENAI_API_KEY || '';
+  const baseURL = process.env.LM_STUDIO_API_URL || undefined; // use LM Studio if provided
+  if (!apiKey && !baseURL) {
+    return null; // no credentials nor local endpoint configured
+  }
+  openAiClient = new OpenAI({ apiKey: apiKey || 'sk-no-key', baseURL });
+  return openAiClient;
+}
+
+function shouldUseLLMForFacts() {
+  // Enable when FACTS_VIA_LLM=true and either OPENAI_API_KEY or LM_STUDIO_API_URL is set
+  const flag = (process.env.FACTS_VIA_LLM || 'false').toLowerCase() === 'true';
+  const client = getOpenAIClient();
+  return flag && !!client;
+}
+
+function resolveModelNameForFacts() {
+  // Use OPENAI_MODEL if provided, otherwise a sensible default
+  let model = process.env.OPENAI_MODEL || 'openai/gpt-oss-20b';
+  // LM Studio typically expects model names without the "openai/" prefix
+  if ((process.env.LM_STUDIO_API_URL || '').length && model.startsWith('openai/')) {
+    model = model.substring(7);
+  }
+  return model;
+}
 
 /**
  * Initialize the user memory system
@@ -222,10 +258,84 @@ async function generateUserContext(userId) {
  * @param {string} response - The bot's response
  */
 async function extractUserFacts(userId, message, response) {
-  // This is a simplified implementation
-  // In a real system, you might want to use the LLM itself to extract facts
-  
-  // Look for common patterns that might indicate personal information
+  // If configured, try to use an LLM to extract concise, stable user facts (RAG-friendly)
+  if (shouldUseLLMForFacts()) {
+    try {
+      const client = getOpenAIClient();
+      const model = resolveModelNameForFacts();
+
+      const userData = await getUserMemory(userId);
+      // Build a compact context with recent interactions to help the model infer consistent facts
+      const recent = userData.interactions.slice(-5).map(it => ({
+        timestamp: it.timestamp,
+        message: it.message,
+        response: it.response
+      }));
+
+      const systemPrompt = [
+        'You extract persistent, RAG-friendly user facts from chats.',
+        'Rules:',
+        '- Output ONLY a JSON array of strings (no prose, no markdown).',
+        '- Keep each fact short, verifiable from the given conversation, and likely to remain true over time.',
+        '- Avoid temporary states, emotions, or context-specific details.',
+        '- Avoid duplicating facts already present in the provided list.',
+        '- Limit to at most 5 facts. Use sentence case; no trailing punctuation.',
+      ].join('\n');
+
+      const inputPayload = {
+        knownFacts: userData.facts || [],
+        recentInteractions: recent,
+        current: { message, response }
+      };
+
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `From the following JSON, extract new persistent user facts.\n\n${JSON.stringify(inputPayload)}` }
+      ];
+
+      const completion = await client.chat.completions.create({
+        model,
+        messages,
+        temperature: 0.2,
+        max_tokens: 300
+      });
+
+      let content = completion.choices?.[0]?.message?.content || '';
+      // Try to parse JSON array; if wrapped in code fences or prose, extract JSON
+      const jsonMatch = content.match(/\[([\s\S]*)\]/);
+      if (jsonMatch) {
+        content = `[${jsonMatch[1]}]`;
+      }
+
+      let facts = [];
+      try {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          facts = parsed
+            .filter(x => typeof x === 'string')
+            .map(s => s.trim())
+            .filter(Boolean)
+            .slice(0, 5);
+        }
+      } catch (e) {
+        // Fall through to regex fallback if JSON parse fails
+        facts = [];
+      }
+
+      if (facts.length) {
+        // Deduplicate against existing
+        for (const f of facts) {
+          await addUserFact(userId, f);
+        }
+        return; // done via LLM
+      }
+      // If LLM produced nothing useful, continue to regex fallback below
+    } catch (err) {
+      console.error('LLM fact extraction failed, falling back to regex:', err?.message || err);
+    }
+  }
+
+  // Fallback: regex-based extraction for offline/testing environments
   const patterns = [
     { regex: /my name is (\w+)/i, extract: (match) => `User's name is ${match[1]}` },
     { regex: /i am (\d+) years old/i, extract: (match) => `User is ${match[1]} years old` },
@@ -236,9 +346,9 @@ async function extractUserFacts(userId, message, response) {
     { regex: /i hate ([^.,]+)/i, extract: (match) => `User dislikes ${match[1]}` },
     { regex: /i prefer ([^.,]+)/i, extract: (match) => `User prefers ${match[1]}` }
   ];
-  
+
   for (const pattern of patterns) {
-    const match = message.match(pattern.regex);
+    const match = (message || '').match(pattern.regex);
     if (match) {
       await addUserFact(userId, pattern.extract(match));
     }
