@@ -224,8 +224,24 @@ client.on("messageCreate", async (message) => {
     if (message.content.startsWith("!quiz")) {
         const channelId = message.channel.id;
         if (quizSessions.has(channelId)) {
-            return message.reply("A quiz is already running in this channel. Please wait until it finishes.");
+            return message.reply("In diesem Kanal läuft bereits ein Quiz. Bitte warte, bis es beendet ist.");
         }
+        // Rate limit: one quiz start per user per Stunde (60 Minuten)
+        const starterId = message.author.id;
+        const now = Date.now();
+        const last = lastQuizStartByUser.get(starterId) || 0;
+        const COOLDOWN_MS = 60 * 60 * 1000; // 60 Minuten
+        const elapsed = now - last;
+        if (elapsed < COOLDOWN_MS) {
+            const remainingMs = COOLDOWN_MS - elapsed;
+            const remainingMin = Math.max(1, Math.ceil(remainingMs / 60000));
+            const allowedAt = new Date(now + remainingMs);
+            const hh = String(allowedAt.getHours()).padStart(2, '0');
+            const mm = String(allowedAt.getMinutes()).padStart(2, '0');
+            return message.reply(`Du kannst nur einmal pro Stunde ein Quiz starten. Bitte warte noch ca. ${remainingMin} Minute(n) (bis ${hh}:${mm}).`);
+        }
+        // Record this start time
+        lastQuizStartByUser.set(starterId, now);
         const args = message.content.split(/\s+/).slice(1);
         const requested = Math.min(5, Math.max(1, parseInt(args[0], 10) || 5));
         const questions = await loadQuizQuestions();
@@ -790,7 +806,9 @@ client.on("messageCreate", async (message) => {
             "Beispiel: `!preference set sprache Deutsch`",
             "",
             "**`!quiz [Anzahl]`** - Starte ein Quiz im Kanal (bis zu 5 Fragen, Standard 5). Alle können antworten.",
-            "**`!toplist`** - Zeige die Top‑Nutzer nach Quiz‑Punkten"
+            "**`!toplist`** - Zeige die Top‑Nutzer nach Quiz‑Punkten",
+            "",
+            "Hinweis: Du kannst nur einmal pro Stunde ein Quiz starten."
         ].join("\n");
         
         message.reply(commandsList);
