@@ -1,6 +1,7 @@
 import { config } from "dotenv";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
+import fs from "fs/promises";
 
 // Load environment variables from env.local file
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,7 +30,9 @@ import {
     deleteUserData,
     addUserFact,
     setUserPreference,
-    getLastInteractionIfRecent
+    getLastInteractionIfRecent,
+    addQuizPoints,
+    getQuizToplist
 } from "./userMemory.js";
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -158,6 +161,33 @@ const client = new Client({
 // Example: simple notify list
 let notifyList = [];
 
+// Quiz state
+const quizSessions = new Map(); // channelId -> session
+let quizQuestionsCache = null;
+
+async function loadQuizQuestions() {
+    if (quizQuestionsCache) return quizQuestionsCache;
+    try {
+        const raw = await fs.readFile(`${__dirname}/quiz-questions.json`, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) throw new Error('quiz-questions.json must be an array');
+        quizQuestionsCache = parsed.filter(q => q && q.question && Array.isArray(q.choices) && typeof q.answerIndex === 'number');
+    } catch (e) {
+        console.error('Failed to load quiz questions:', e.message || e);
+        quizQuestionsCache = [];
+    }
+    return quizQuestionsCache;
+}
+
+function formatQuestion(q, index, total) {
+    const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+    const lines = [];
+    lines.push(`Question ${index + 1}/${total}: ${q.question}`);
+    lines.push(q.choices.map((opt, i) => `${letters[i]}. ${opt}`).join('\n'));
+    lines.push('Reply with the letter of your answer (A, B, C, ...). Your first answer counts.');
+    return lines.join('\n');
+}
+
 // Bot events
 client.once("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`);
@@ -179,8 +209,117 @@ client.on("messageCreate", async (message) => {
 
     // Check if the bot is mentioned in the message
     if (message.mentions.has(client.user)) {
+        // If a quiz is active in this channel, ignore mentions to avoid interrupting quiz replies
+        if (quizSessions.has(message.channel.id)) {
+            return; // do not send generic mention reply during quiz
+        }
         console.log("Bot was mentioned in a message");
         return message.reply("Hello! I'm your bot assistant. You can use the !llm command followed by your query to get a response.");
+    }
+
+    // QUIZ COMMANDS
+    if (message.content.startsWith("!quiz")) {
+        const channelId = message.channel.id;
+        if (quizSessions.has(channelId)) {
+            return message.reply("A quiz is already running in this channel. Please wait until it finishes.");
+        }
+        const args = message.content.split(/\s+/).slice(1);
+        const requested = Math.min(5, Math.max(1, parseInt(args[0], 10) || 5));
+        const questions = await loadQuizQuestions();
+        if (!questions.length) {
+            return message.reply("No quiz questions available. Ask the admin to add quiz-questions.json.");
+        }
+        // Pick random distinct questions up to requested
+        const shuffled = [...questions].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, requested);
+        const session = {
+            channelId,
+            questions: selected,
+            currentIndex: 0,
+            answersPerQuestion: new Map(), // questionIndex -> Map(userId -> choiceIndex)
+            correctCountByUser: new Map(), // userId -> count
+            participants: new Set(),
+            active: true
+        };
+        quizSessions.set(channelId, session);
+        await message.channel.send(`Starting a quiz with ${selected.length} question(s)! Everyone can participate. Bonus +2 points if you get all correct.`);
+        // Start asking sequentially
+        for (let i = 0; i < selected.length; i++) {
+            session.currentIndex = i;
+            const q = selected[i];
+            const prompt = formatQuestion(q, i, selected.length);
+            await message.channel.send(prompt);
+            const letters = ['A','B','C','D','E','F'];
+            const filter = m => !m.author.bot && letters.includes(m.content.trim().toUpperCase()) && m.channel.id === channelId;
+            const collected = await message.channel.awaitMessages({ filter, time: 20000 }); // 20s per question
+            const map = new Map();
+            collected.forEach(m => {
+                const uid = m.author.id;
+                if (map.has(uid)) return; // only first answer counts
+                const letter = m.content.trim().toUpperCase();
+                const idx = letters.indexOf(letter);
+                if (idx >= 0) {
+                    map.set(uid, idx);
+                    session.participants.add(uid);
+                }
+            });
+            session.answersPerQuestion.set(i, map);
+            // Reveal correct answer and who got it right
+            const correctIdx = q.answerIndex;
+            const winners = [];
+            map.forEach((choiceIdx, uid) => {
+                if (choiceIdx === correctIdx) {
+                    winners.push(uid);
+                    session.correctCountByUser.set(uid, (session.correctCountByUser.get(uid) || 0) + 1);
+                }
+            });
+            const correctLetter = letters[correctIdx];
+            if (winners.length) {
+                const mentions = winners.map(id => `<@${id}>`).join(', ');
+                await message.channel.send(`Time's up! Correct answer: ${correctLetter}. Well done: ${mentions}`);
+            } else {
+                await message.channel.send(`Time's up! Correct answer: ${correctLetter}. No correct answers this time.`);
+            }
+        }
+        // Finish quiz: compute points and bonus
+        const totalQ = selected.length;
+        const results = [];
+        session.participants.forEach(uid => {
+            const correct = session.correctCountByUser.get(uid) || 0;
+            let points = correct;
+            let bonus = 0;
+            if (correct === totalQ && totalQ > 0) {
+                bonus = 2; // bonus points for all correct
+                points += bonus;
+            }
+            results.push({ uid, correct, points, bonus });
+        });
+        // Persist points and build scoreboard lines
+        const lines = [];
+        for (const r of results) {
+            const member = await message.guild.members.fetch(r.uid).catch(() => null);
+            const uname = member?.user?.username || null;
+            await addQuizPoints(r.uid, uname, r.points);
+            const bonusTxt = r.bonus ? ` (+${r.bonus} bonus)` : '';
+            lines.push(`- ${member ? member.user.username : 'User'}: ${r.correct}/${totalQ} correct, +${r.points} points${bonusTxt}`);
+        }
+        session.active = false;
+        quizSessions.delete(channelId);
+        if (lines.length) {
+            await message.channel.send([`Quiz finished! Results:`, ...lines, '', 'See the server toplist with !toplist'].join('\n'));
+        } else {
+            await message.channel.send('Quiz finished! No participants.');
+        }
+        return; // done handling !quiz
+    }
+
+    if (message.content.startsWith("!toplist")) {
+        const tops = await getQuizToplist(10);
+        if (!tops.length) {
+            return message.reply("No quiz points yet. Start with !quiz");
+        }
+        const lines = tops.map((t, i) => `${i + 1}. ${t.username || 'User ' + t.userId}: ${t.quizPoints} pts`);
+        return message.reply(["Top Quiz Players:", ...lines].join('\n'));
     }
 
     if (message.content.startsWith("!llm")) {
@@ -643,7 +782,10 @@ client.on("messageCreate", async (message) => {
             "Example: `!fact add I like programming`",
             "",
             "**`!preference set <key> <value>`** - Set a preference",
-            "Example: `!preference set language German`"
+            "Example: `!preference set language German`",
+            "",
+            "**`!quiz [count]`** - Start a quiz in the channel (up to 5 questions, default 5). Everyone can answer.",
+            "**`!toplist`** - Show top users by quiz points"
         ].join("\n");
         
         message.reply(commandsList);

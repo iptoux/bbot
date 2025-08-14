@@ -29,7 +29,8 @@ const USER_MEMORY_FILE = path.join(__dirname, 'user-memory.json');
 //     ],
 //     "preferences": {
 //       "key": "value"
-//     }
+//     },
+//     "quizPoints": 0
 //   }
 // }
 
@@ -122,7 +123,8 @@ async function getUserMemory(userId) {
       lastInteraction: new Date().toISOString(),
       interactions: [],
       facts: [],
-      preferences: {}
+      preferences: {},
+      quizPoints: 0
     };
   }
   
@@ -477,6 +479,43 @@ async function getLastInteractionIfRecent(userId, thresholdMs = 120000) {
   return null;
 }
 
+/**
+ * Add quiz points to a user and persist
+ * @param {string} userId
+ * @param {string|null} username
+ * @param {number} points
+ */
+async function addQuizPoints(userId, username, points) {
+  if (!isInitialized) {
+    await initUserMemory();
+  }
+  const userData = await getUserMemory(userId);
+  if (username) userData.username = username;
+  const n = Number(points) || 0;
+  if (!Number.isFinite(userData.quizPoints)) userData.quizPoints = 0;
+  userData.quizPoints += n;
+  await saveUserMemory();
+  return userData.quizPoints;
+}
+
+/**
+ * Get toplist of users by quiz points
+ * @param {number} limit
+ * @returns {Array<{userId:string, username:string|null, quizPoints:number}>}
+ */
+async function getQuizToplist(limit = 10) {
+  if (!isInitialized) {
+    await initUserMemory();
+  }
+  const entries = Object.entries(userMemoryCache).map(([userId, data]) => ({
+    userId,
+    username: data.username || null,
+    quizPoints: Number.isFinite(data.quizPoints) ? data.quizPoints : 0
+  }));
+  entries.sort((a, b) => b.quizPoints - a.quizPoints);
+  return entries.slice(0, limit);
+}
+
 export {
   initUserMemory,
   getUserMemory,
@@ -487,5 +526,7 @@ export {
   extractUserFacts,
   formatUserDataForDisplay,
   deleteUserData,
-  getLastInteractionIfRecent
+  getLastInteractionIfRecent,
+  addQuizPoints,
+  getQuizToplist
 };

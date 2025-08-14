@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What does 'const' declare in JavaScript?",
+    "choices": [
+      "A block-scoped variable that cannot be reassigned",
+      "A function-scoped variable that can be reassigned",
+      "A constant object that is deeply immutable",
+      "A global variable available on window"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "question": "Which array method returns a new array with elements that pass a test?",
+    "choices": [
+      "map",
+      "forEach",
+      "filter",
+      "reduce"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "question": "In Git, which command creates a new branch and switches to it?",
+    "choices": [
+      "git branch <name>",
+      "git checkout <name>",
+      "git checkout -b <name>",
+      "git switch -c <name>"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "question": "What does HTTP status code 201 mean?",
+    "choices": [
+      "OK",
+      "Created",
+      "Accepted",
+      "No Content"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "question": "Which TypeScript feature allows restricting variable to a set of values?",
+    "choices": [
+      "Interfaces",
+      "Enums",
+      "Generics",
+      "Namespaces"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "question": "Which of these is NOT a JavaScript primitive?",
+    "choices": [
+      "symbol",
+      "bigint",
+      "object",
+      "boolean"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "question": "What is the default HTTP method when submitting an HTML form without method attribute?",
+    "choices": [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "question": "Which Node.js module is used to create an HTTP server?",
+    "choices": [
+      "fs",
+      "http",
+      "net",
+      "url"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "question": "In CSS, which property controls the stacking order of positioned elements?",
+    "choices": [
+      "order",
+      "z-index",
+      "stack",
+      "position-index"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "question": "What does JSON stand for?",
+    "choices": [
+      "JavaScript Oriented Notation",
+      "Java Serialized Object Notation",
+      "JavaScript Object Notation",
+      "Just Simple Object Notation"
+    ],
+    "answerIndex": 2
+  }
+]
