@@ -124,7 +124,7 @@ const jokes = {
 
 // Zufälligen Witz zu einem Begriff ausgeben
 function randomJoke(term, channel) {
-    if (channel === "programmierer-chat") {
+    if (channel === "┣〢programmierer-chat") {
         console.log(`Skipping joke for channel "${channel}".`);
         return;
     }
