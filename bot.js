@@ -123,7 +123,11 @@ const jokes = {
 };
 
 // Zufälligen Witz zu einem Begriff ausgeben
-function randomJoke(term) {
+function randomJoke(term, channel) {
+    if (channel === "programmierer-chat") {
+        console.log(`Skipping joke for channel "${channel}".`);
+        return;
+    }
     if (!jokes[term]) {
         console.log(`Keine Witze für "${term}" gefunden.`);
     }
@@ -175,9 +179,8 @@ client.on("messageCreate", async (message) => {
         console.log("Bot was mentioned in a message");
         return message.reply("Hello! I'm your bot assistant. You can use the !llm command followed by your query to get a response.");
     }
-    
-    // Check if the message starts with !llm
-    if (message.content.startsWith("!llm")) {
+
+    if (message.content.startsWith("!llm") && message.channel.name === "programmierer-chat") {
         // Extract the prompt from the message
         const prompt = message.content.substring(5).trim();
         
