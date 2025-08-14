@@ -268,17 +268,19 @@ async function extractUserFacts(userId, message, response) {
 
       const userData = await getUserMemory(userId);
       // Build a compact context with recent interactions to help the model infer consistent facts
+      // IMPORTANT: Only include what the USER said; ignore assistant responses entirely.
       const recent = userData.interactions.slice(-5).map(it => ({
         timestamp: it.timestamp,
-        message: it.message,
-        response: it.response
+        message: it.message
       }));
 
       const systemPrompt = [
         'You extract persistent, RAG-friendly user facts from chats.',
         'Rules:',
+        '- Consider ONLY statements explicitly made by the user. Ignore assistant/bot responses entirely.',
         '- Output ONLY a JSON array of strings (no prose, no markdown).',
-        '- Keep each fact short, verifiable from the given conversation, and likely to remain true over time.',
+        '- Keep each fact short, verifiable from the given user messages, and likely to remain true over time.',
+        '- Do not infer facts from suggestions or questions posed by the assistant.',
         '- Avoid temporary states, emotions, or context-specific details.',
         '- Avoid duplicating facts already present in the provided list.',
         '- Limit to at most 5 facts. Use sentence case; no trailing punctuation.',
@@ -286,13 +288,13 @@ async function extractUserFacts(userId, message, response) {
 
       const inputPayload = {
         knownFacts: userData.facts || [],
-        recentInteractions: recent,
-        current: { message, response }
+        recentUserMessages: recent,
+        current: { message }
       };
 
       const messages = [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `From the following JSON, extract new persistent user facts.\n\n${JSON.stringify(inputPayload)}` }
+        { role: 'user', content: `From the following JSON, extract new persistent user facts based ONLY on user messages.\n\n${JSON.stringify(inputPayload)}` }
       ];
 
       const completion = await client.chat.completions.create({
