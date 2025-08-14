@@ -1,16 +1,18 @@
 [
   {
-    "question": "What does 'const' declare in JavaScript?",
+    "category": "Programmierung",
+    "question": "Was gibt folgender JavaScript-Code aus?\n```javascript\nlet x = 5;\nif (x = 10) {\n  console.log('A');\n} else {\n  console.log('B');\n}\n```",
     "choices": [
-      "A block-scoped variable that cannot be reassigned",
-      "A function-scoped variable that can be reassigned",
-      "A constant object that is deeply immutable",
-      "A global variable available on window"
+      "A",
+      "B",
+      "Fehler wegen Zuweisung im if",
+      "undefined"
     ],
     "answerIndex": 0
   },
   {
-    "question": "Which array method returns a new array with elements that pass a test?",
+    "category": "Programmierung",
+    "question": "Welche Array-Methode in JavaScript erstellt ein neues Array mit Elementen, die einen Test bestehen?\n```javascript\nconst arr = [1, 2, 3, 4];\nconst result = arr.???(n => n % 2 === 0);\n```",
     "choices": [
       "map",
       "forEach",
@@ -20,7 +22,8 @@
     "answerIndex": 2
   },
   {
-    "question": "In Git, which command creates a new branch and switches to it?",
+    "category": "Programmierung",
+    "question": "Welcher Git-Befehl erstellt einen neuen Branch und wechselt direkt zu diesem?",
     "choices": [
       "git branch <name>",
       "git checkout <name>",
@@ -30,27 +33,19 @@
     "answerIndex": 3
   },
   {
-    "question": "What does HTTP status code 201 mean?",
+    "category": "Programmierung",
+    "question": "Was bedeutet der HTTP-Statuscode 201?",
     "choices": [
       "OK",
-      "Created",
-      "Accepted",
-      "No Content"
+      "Erstellt",
+      "Akzeptiert",
+      "Kein Inhalt"
     ],
     "answerIndex": 1
   },
   {
-    "question": "Which TypeScript feature allows restricting variable to a set of values?",
-    "choices": [
-      "Interfaces",
-      "Enums",
-      "Generics",
-      "Namespaces"
-    ],
-    "answerIndex": 1
-  },
-  {
-    "question": "Which of these is NOT a JavaScript primitive?",
+    "category": "Programmierung",
+    "question": "Welche dieser Werte ist KEIN primitiver Datentyp in JavaScript?",
     "choices": [
       "symbol",
       "bigint",
@@ -60,7 +55,8 @@
     "answerIndex": 2
   },
   {
-    "question": "What is the default HTTP method when submitting an HTML form without method attribute?",
+    "category": "Programmierung",
+    "question": "Welcher HTTP-Request wird standardmäßig gesendet, wenn ein HTML-Formular kein 'method'-Attribut hat?",
     "choices": [
       "GET",
       "POST",
@@ -70,7 +66,8 @@
     "answerIndex": 0
   },
   {
-    "question": "Which Node.js module is used to create an HTTP server?",
+    "category": "Programmierung",
+    "question": "Welches Node.js-Modul wird verwendet, um einen HTTP-Server zu erstellen?",
     "choices": [
       "fs",
       "http",
@@ -80,7 +77,8 @@
     "answerIndex": 1
   },
   {
-    "question": "In CSS, which property controls the stacking order of positioned elements?",
+    "category": "Programmierung",
+    "question": "Welche CSS-Eigenschaft steuert die Stapelreihenfolge von positionierten Elementen?",
     "choices": [
       "order",
       "z-index",
@@ -90,13 +88,1191 @@
     "answerIndex": 1
   },
   {
-    "question": "What does JSON stand for?",
+    "category": "Programmierung",
+    "question": "Welcher SQL-Befehl löscht alle Zeilen einer Tabelle, behält aber die Struktur?",
     "choices": [
-      "JavaScript Oriented Notation",
-      "Java Serialized Object Notation",
-      "JavaScript Object Notation",
-      "Just Simple Object Notation"
+      "DROP TABLE",
+      "DELETE FROM",
+      "TRUNCATE TABLE",
+      "REMOVE TABLE"
     ],
     "answerIndex": 2
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Was ist ein Hauptziel des Datenschutzes laut DSGVO?",
+    "choices": [
+      "Minimierung der Datenspeichergröße",
+      "Schutz personenbezogener Daten",
+      "Erhöhung der Serverleistung",
+      "Vermeidung von Backup-Fehlern"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Was ist in der Kosten- und Leistungsrechnung eine 'fixe Kostenart'?",
+    "choices": [
+      "Kosten, die unabhängig von der Auslastung anfallen",
+      "Kosten, die mit der Produktion variieren",
+      "Einmalige Investitionskosten",
+      "Steuern auf Unternehmensgewinne"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Projektmanagement",
+    "question": "Welche der folgenden Aussagen beschreibt am besten das Vier-Augen-Prinzip?",
+    "choices": [
+      "Mindestens zwei Personen müssen eine Entscheidung prüfen oder freigeben",
+      "Es müssen zwei Monitore am Arbeitsplatz vorhanden sein",
+      "Zwei Personen arbeiten gleichzeitig am selben Code",
+      "Zwei Personen sitzen im selben Büro"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was bezeichnet man in der Softwareentwicklung als 'Refactoring'?",
+    "choices": [
+      "Das Optimieren des Codes ohne Änderung des äußeren Verhaltens",
+      "Das vollständige Neuschreiben eines Projekts",
+      "Das Hinzufügen neuer Funktionen",
+      "Das Aktualisieren von Bibliotheken"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "WISO",
+    "question": "Welche Aussage über 'Open Source'-Software ist korrekt?",
+    "choices": [
+      "Der Quellcode ist frei einsehbar und veränderbar",
+      "Die Software ist immer kostenlos",
+      "Sie darf nicht kommerziell genutzt werden",
+      "Sie ist immer sicherer als Closed Source"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Was versteht man im Rechnungswesen unter 'Skonto'?",
+    "choices": [
+      "Preisnachlass bei Zahlung innerhalb einer bestimmten Frist",
+      "Rabatt für Großbestellungen",
+      "Zuschlag für verspätete Zahlung",
+      "Provision für den Verkäufer"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "WISO",
+    "question": "Welche Lizenz erlaubt es, Software frei zu nutzen, zu ändern und zu verbreiten, verlangt aber, dass abgeleitete Werke ebenfalls unter derselben Lizenz stehen?",
+    "choices": [
+      "MIT",
+      "GPL",
+      "Apache",
+      "BSD"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was bedeutet 'CRUD' im Zusammenhang mit Datenbanken?",
+    "choices": [
+      "Create, Read, Update, Delete",
+      "Connect, Run, Update, Deploy",
+      "Check, Repair, Upload, Download",
+      "Copy, Remove, Undo, Drop"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welche dieser Speicherarten ist flüchtig und verliert ihren Inhalt beim Ausschalten des PCs?",
+    "choices": [
+      "ROM",
+      "RAM",
+      "SSD",
+      "Flash-Speicher"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Was ist der Hauptzweck einer Firewall?",
+    "choices": [
+      "Überwachung und Filterung des Netzwerkverkehrs",
+      "Erhöhung der Internetgeschwindigkeit",
+      "Speichern von Passwörtern",
+      "Automatische Software-Updates"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender Python-Code aus?\n```python\nx = [1, 2, 3]\nprint(x * 2)\n```",
+    "choices": [
+      "[1, 2, 3, 1, 2, 3]",
+      "[2, 4, 6]",
+      "Fehler",
+      "None"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender Python-Code aus?\n```python\ndef test(a=[]):\n    a.append(1)\n    return a\nprint(test())\nprint(test())\n```",
+    "choices": [
+      "[1] und [1]",
+      "[1] und [1, 1]",
+      "[1] und []",
+      "Fehler"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welcher SQL-Befehl fügt eine neue Zeile in eine Tabelle ein?",
+    "choices": [
+      "INSERT INTO",
+      "ADD ROW",
+      "UPDATE",
+      "APPEND"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Projektmanagement",
+    "question": "Was ist ein Meilenstein in einem Projektplan?",
+    "choices": [
+      "Ein wichtiger Zwischenschritt oder ein Ereignis ohne Dauer",
+      "Eine große Aufgabe mit vielen Unteraufgaben",
+      "Der Projektabschluss",
+      "Der Punkt mit den höchsten Kosten"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "WISO",
+    "question": "Was versteht man unter 'Liquidität'?",
+    "choices": [
+      "Die Fähigkeit, kurzfristige Verbindlichkeiten fristgerecht zu begleichen",
+      "Die Höhe des Unternehmensgewinns",
+      "Der Anteil des Eigenkapitals am Gesamtkapital",
+      "Die Steuerlast eines Unternehmens"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender JavaScript-Code aus?\n```javascript\nconsole.log(typeof null);\n```",
+    "choices": [
+      "'null'",
+      "'object'",
+      "'undefined'",
+      "'string'"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welcher Befehl in Git entfernt eine Datei aus der Versionskontrolle, lässt sie aber lokal bestehen?",
+    "choices": [
+      "git rm <datei>",
+      "git rm --cached <datei>",
+      "git delete <datei>",
+      "git remove <datei>"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Wie berechnet sich der Bruttoverkaufspreis?",
+    "choices": [
+      "Nettoverkaufspreis + Skonto",
+      "Nettoverkaufspreis + Umsatzsteuer",
+      "Einstandspreis + Gewinn",
+      "Selbstkostenpreis - Rabatt"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Welche der folgenden Angaben ist nach DSGVO eine 'besondere Kategorie personenbezogener Daten'?",
+    "choices": [
+      "Name",
+      "Geburtsdatum",
+      "Religiöse Überzeugung",
+      "E-Mail-Adresse"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Welcher Angriff nutzt massenhaft Anfragen, um einen Server lahmzulegen?",
+    "choices": [
+      "SQL-Injection",
+      "Cross-Site Scripting",
+      "DDoS",
+      "Phishing"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender Python-Code aus?\n```python\nprint(0.1 + 0.2 == 0.3)\n```",
+    "choices": [
+      "True",
+      "False",
+      "Fehler",
+      "None"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welche Methode eines Python-Listenobjekts entfernt das erste vorkommende Element mit einem bestimmten Wert?",
+    "choices": [
+      "pop()",
+      "delete()",
+      "remove()",
+      "discard()"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "Projektmanagement",
+    "question": "Welche Projektmanagement-Methode setzt stark auf kurze Entwicklungszyklen und enge Kundeninteraktion?",
+    "choices": [
+      "Wasserfallmodell",
+      "Scrum",
+      "V-Modell",
+      "PRINCE2"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender JavaScript-Code aus?\n```javascript\nconsole.log([1, 2] + [3, 4]);\n```",
+    "choices": [
+      "[1, 2, 3, 4]",
+      "'1,23,4'",
+      "'1,23,4' als String",
+      "'1,23,4' mit Leerzeichen"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "WISO",
+    "question": "Was versteht man unter 'Magischem Dreieck' der Wirtschaftspolitik?",
+    "choices": [
+      "Wachstum, Vollbeschäftigung, Preisstabilität",
+      "Wachstum, Export, Innovation",
+      "Inflation, Deflation, Rezession",
+      "Zins, Rendite, Risiko"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Was ist der Unterschied zwischen Aufwand und Kosten?",
+    "choices": [
+      "Aufwand ist periodenbezogen, Kosten sind leistungsbezogen",
+      "Es gibt keinen Unterschied",
+      "Kosten sind immer höher als Aufwand",
+      "Aufwand betrifft nur Material"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender SQL-Befehl zurück?\n```sql\nSELECT COUNT(*) FROM kunden;\n```",
+    "choices": [
+      "Die Anzahl der Zeilen in der Tabelle 'kunden'",
+      "Die Summe aller Werte in der Tabelle",
+      "Alle Datensätze ohne Duplikate",
+      "Nur die Spaltenüberschriften"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Welcher Hash-Algorithmus gilt als unsicher und sollte nicht mehr für Passwörter verwendet werden?",
+    "choices": [
+      "SHA-256",
+      "SHA-1",
+      "bcrypt",
+      "Argon2"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender Python-Code aus?\n```python\nprint(bool(\"False\"))\n```",
+    "choices": [
+      "True",
+      "False",
+      "Fehler",
+      "None"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welcher Operator in JavaScript vergleicht Werte ohne Typumwandlung?",
+    "choices": [
+      "==",
+      "===",
+      "!=",
+      "!=="
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Projektmanagement",
+    "question": "Was ist ein 'Scope Creep'?",
+    "choices": [
+      "Ein unkontrolliertes Ausweiten des Projektumfangs",
+      "Eine besonders große Aufgabe",
+      "Ein Projektrisiko",
+      "Ein Testfehler"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "WISO",
+    "question": "Was beschreibt die 'Amortisationsdauer'?",
+    "choices": [
+      "Zeit bis eine Investition durch Rückflüsse gedeckt ist",
+      "Zeit bis ein Kredit abbezahlt ist",
+      "Zeit bis zum Projektabschluss",
+      "Laufzeit eines Vertrags"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender Python-Code aus?\n```python\nx = {1, 2, 3}\nx.add(2)\nprint(x)\n```",
+    "choices": [
+      "{1, 2, 3}",
+      "{1, 2, 2, 3}",
+      "[1, 2, 3]",
+      "Fehler"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Was sind 'variable Kosten'?",
+    "choices": [
+      "Kosten, die abhängig von der Ausbringungsmenge sind",
+      "Kosten, die konstant bleiben",
+      "Kosten, die sich nur jährlich ändern",
+      "Kosten, die nur einmal anfallen"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Was ist 'Privacy by Design'?",
+    "choices": [
+      "Datenschutz wird erst nach der Entwicklung berücksichtigt",
+      "Datenschutz wird von Beginn an in Systeme integriert",
+      "Ein spezielles Verschlüsselungsverfahren",
+      "Eine Art von Firewall"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Was ist der Zweck von 2-Faktor-Authentifizierung?",
+    "choices": [
+      "Erhöhen der Sicherheit durch Kombination von zwei unabhängigen Faktoren",
+      "Schnelleres Login",
+      "Ersetzen von Passwörtern",
+      "Automatisches Backup"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender JavaScript-Code aus?\n```javascript\nconsole.log(!!\"0\");\n```",
+    "choices": [
+      "true",
+      "false",
+      "0",
+      "Fehler"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Projektmanagement",
+    "question": "Was ist der 'kritische Pfad' in der Projektplanung?",
+    "choices": [
+      "Die Abfolge von Aufgaben, die die minimale Projektdauer bestimmt",
+      "Der Weg mit den meisten Aufgaben",
+      "Der Plan für die Projektrisiken",
+      "Die schnellste Liefermethode"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender Python-Code aus?\n```python\nprint([i for i in range(3)])\n```",
+    "choices": [
+      "[0, 1, 2]",
+      "[1, 2, 3]",
+      "(0, 1, 2)",
+      "Fehler"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welcher SQL-Befehl ändert bestehende Daten in einer Tabelle?",
+    "choices": [
+      "INSERT",
+      "UPDATE",
+      "ALTER",
+      "CHANGE"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Was versteht man unter 'Abschreibung'?",
+    "choices": [
+      "Planmäßige Wertminderung eines Vermögensgegenstandes",
+      "Preisnachlass für Kunden",
+      "Erhöhung des Verkaufspreises",
+      "Einmalige Steuerzahlung"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Wer ist laut DSGVO verantwortlich für die Einhaltung des Datenschutzes in einem Unternehmen?",
+    "choices": [
+      "Jeder einzelne Mitarbeiter",
+      "Der Datenschutzbeauftragte",
+      "Der Verantwortliche bzw. die Geschäftsführung",
+      "Die IT-Abteilung"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Was ist 'Phishing'?",
+    "choices": [
+      "Das Abfangen von Datenpaketen",
+      "Das Ausspähen von Zugangsdaten über gefälschte Webseiten oder E-Mails",
+      "Das Testen von Servern auf Sicherheitslücken",
+      "Das Manipulieren von DNS-Einträgen"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "WISO",
+    "question": "Was versteht man unter 'Inflation'?",
+    "choices": [
+      "Allgemeiner Anstieg des Preisniveaus",
+      "Allgemeiner Rückgang des Preisniveaus",
+      "Erhöhung der Löhne",
+      "Erhöhung der Steuern"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender JavaScript-Code aus?\n```javascript\nconsole.log([] == false);\n```",
+    "choices": [
+      "true",
+      "false",
+      "Fehler",
+      "undefined"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Projektmanagement",
+    "question": "Was ist ein Gantt-Diagramm?",
+    "choices": [
+      "Eine tabellarische Übersicht der Projektrisiken",
+      "Ein Balkendiagramm zur Darstellung von Projektzeitplänen",
+      "Ein Flussdiagramm für Prozesse",
+      "Ein Kostenübersichtsplan"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welche Methode in Python gibt die Anzahl der Vorkommen eines bestimmten Werts in einer Liste zurück?",
+    "choices": [
+      "len()",
+      "count()",
+      "find()",
+      "index()"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Welche Steuer fällt beim Kauf von Waren in Deutschland in der Regel an?",
+    "choices": [
+      "Einkommensteuer",
+      "Körperschaftsteuer",
+      "Umsatzsteuer",
+      "Gewerbesteuer"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender Python-Code aus?\n```python\nprint(\"Hallo\"[::-1])\n```",
+    "choices": [
+      "Hallo",
+      "ollaH",
+      "Error",
+      "Holal"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Was bedeutet 'Least Privilege' im Sicherheitskontext?",
+    "choices": [
+      "Jeder Benutzer hat alle Rechte",
+      "Benutzer erhalten nur die minimal nötigen Rechte",
+      "Admins haben keine Einschränkungen",
+      "Nur externe Benutzer haben Zugriff"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "WISO",
+    "question": "Was ist der Hauptzweck der Gewinn- und Verlustrechnung?",
+    "choices": [
+      "Darstellung der Ertragslage eines Unternehmens",
+      "Ermittlung der Steuerlast",
+      "Darstellung des Anlagevermögens",
+      "Berechnung der Löhne"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender SQL-Befehl zurück?\n```sql\nSELECT MAX(preis) FROM produkte;\n```",
+    "choices": [
+      "Den höchsten Wert in der Spalte preis",
+      "Die Anzahl der Produkte",
+      "Das Produkt mit dem niedrigsten Preis",
+      "Alle Produkte"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Projektmanagement",
+    "question": "Welches Dokument beschreibt Ziele, Aufgaben, Ressourcen und Zeitplan eines Projekts?",
+    "choices": [
+      "Projektstrukturplan",
+      "Pflichtenheft",
+      "Lastenheft",
+      "Projektauftrag"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender JavaScript-Code aus?\n```javascript\nconsole.log(typeof NaN);\n```",
+    "choices": [
+      "'number'",
+      "'NaN'",
+      "'undefined'",
+      "'object'"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Was versteht man unter 'Eigenkapitalquote'?",
+    "choices": [
+      "Anteil des Eigenkapitals am Gesamtkapital",
+      "Gewinn pro Jahr",
+      "Anteil der Schulden am Gesamtkapital",
+      "Liquiditätsreserve"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Was ist 'Pseudonymisierung'?",
+    "choices": [
+      "Personenbezogene Daten werden vollständig gelöscht",
+      "Personenbezogene Daten werden durch Kennzeichen ersetzt, bleiben aber zuordenbar",
+      "Daten werden ohne Schlüssel unlesbar gemacht",
+      "Öffentlich zugängliche Daten werden markiert"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender Python-Code aus?\n```python\nx = [1, 2, 3]\nprint(x[3:])\n```",
+    "choices": [
+      "[]",
+      "[3]",
+      "Fehler",
+      "None"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Welches ist KEIN Beispiel für Malware?",
+    "choices": [
+      "Trojaner",
+      "Wurm",
+      "Keylogger",
+      "Firewall"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "category": "WISO",
+    "question": "Was ist der Unterschied zwischen Brutto- und Nettogehalt?",
+    "choices": [
+      "Brutto ist vor Abzügen, Netto nach Abzügen",
+      "Netto ist vor Abzügen, Brutto nach Abzügen",
+      "Es gibt keinen Unterschied",
+      "Brutto beinhaltet keine Steuern"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender JavaScript-Code aus?\n```javascript\nconsole.log(1 + '2' + 3);\n```",
+    "choices": [
+      "'123'",
+      "'15'",
+      "6",
+      "Fehler"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Was sind 'Fixkosten'?",
+    "choices": [
+      "Kosten, die unabhängig von der Ausbringungsmenge anfallen",
+      "Kosten, die mit der Produktion steigen",
+      "Kosten für Rohstoffe",
+      "Kosten für Werbung"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welche Ausgabe erzeugt folgender Python-Code?\n\n```python\nprint('5' * 3)\n```",
+    "choices": [
+      "15",
+      "555",
+      "Error",
+      "5 5 5"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was passiert bei folgendem JavaScript-Code?\n\n```javascript\nlet x = 0;\nif (x = 5) {\n  console.log('Hallo');\n}\n```",
+    "choices": [
+      "Es wird nichts ausgegeben",
+      "Es wird 'Hallo' ausgegeben",
+      "SyntaxError",
+      "Es wird eine Exception geworfen"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welche SQL-Anweisung löscht alle Datensätze aus der Tabelle 'kunden'?",
+    "choices": [
+      "DROP TABLE kunden;",
+      "DELETE FROM kunden;",
+      "REMOVE * FROM kunden;",
+      "CLEAR TABLE kunden;"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender Code in JavaScript aus?\n\n```javascript\nconsole.log(typeof null);\n```",
+    "choices": [
+      "'null'",
+      "'undefined'",
+      "'object'",
+      "'string'"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "Programmierung",
+    "question": "In Python: Welcher Operator wird verwendet, um die ganzzahlige Division durchzuführen?",
+    "choices": [
+      "/",
+      "//",
+      "%",
+      "**"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was macht der Befehl `git stash`?",
+    "choices": [
+      "Speichert uncommittete Änderungen zwischen und setzt das Arbeitsverzeichnis zurück",
+      "Löscht den aktuellen Branch",
+      "Erstellt ein Backup des Repositories",
+      "Wechselt zum letzten Commit"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welche CSS-Eigenschaft ändert die Schriftgröße?",
+    "choices": [
+      "font-size",
+      "text-size",
+      "font-style",
+      "size"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "WISO",
+    "question": "Was versteht man unter dem Begriff 'Liquidität'?",
+    "choices": [
+      "Die Rentabilität eines Unternehmens",
+      "Die Fähigkeit, Zahlungsverpflichtungen fristgerecht nachzukommen",
+      "Die Anzahl der Kunden",
+      "Die Höhe der Eigenkapitalquote"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "WISO",
+    "question": "Welches Organ überwacht die Geschäftsführung einer AG?",
+    "choices": [
+      "Hauptversammlung",
+      "Aufsichtsrat",
+      "Vorstand",
+      "Betriebsrat"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "WISO",
+    "question": "Welcher Tarifvertrag gilt für alle Beschäftigten einer Branche?",
+    "choices": [
+      "Firmentarifvertrag",
+      "Branchentarifvertrag",
+      "Manteltarifvertrag",
+      "Flächentarifvertrag"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "category": "WISO",
+    "question": "Welches der folgenden Gesetze regelt den Schutz vor unlauterem Wettbewerb?",
+    "choices": [
+      "HGB",
+      "UWG",
+      "BGB",
+      "GWB"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "WISO",
+    "question": "Was ist der Hauptzweck der Handelsbilanz?",
+    "choices": [
+      "Darstellung der finanziellen Lage für externe Adressaten",
+      "Berechnung der Einkommensteuer",
+      "Ermittlung der Gewinnbeteiligung der Mitarbeiter",
+      "Planung zukünftiger Investitionen"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Wie berechnet sich der Bruttolohn aus dem Nettolohn?",
+    "choices": [
+      "Nettolohn + Steuern + Sozialabgaben",
+      "Nettolohn - Steuern + Sozialabgaben",
+      "Nettolohn × Steuersatz",
+      "Nettolohn + Umsatzsteuer"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Was bedeutet der Begriff 'Skonto'?",
+    "choices": [
+      "Ein Preisnachlass bei sofortiger Barzahlung",
+      "Ein Preisnachlass bei Zahlung innerhalb einer bestimmten Frist",
+      "Ein Rabatt für Stammkunden",
+      "Eine Sonderaktion im Einzelhandel"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Wenn der Wareneinkauf auf Ziel erfolgt, welche Konten werden angesprochen?",
+    "choices": [
+      "Wareneingang an Verbindlichkeiten aus Lieferungen und Leistungen",
+      "Kasse an Wareneingang",
+      "Verbindlichkeiten aus Lieferungen und Leistungen an Wareneingang",
+      "Bank an Wareneingang"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Wie hoch ist die Umsatzsteuer in Deutschland (Stand 2025) für die meisten Waren?",
+    "choices": [
+      "7%",
+      "16%",
+      "19%",
+      "20%"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Welche Strafe droht bei einem DSGVO-Verstoß maximal?",
+    "choices": [
+      "Bis zu 1 Mio. €",
+      "Bis zu 10 Mio. € oder 2% des weltweiten Jahresumsatzes",
+      "Bis zu 20 Mio. € oder 4% des weltweiten Jahresumsatzes",
+      "Bis zu 100 Mio. €"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Welche Daten gehören zu den 'besonderen Kategorien' nach DSGVO?",
+    "choices": [
+      "E-Mail-Adresse, Telefonnummer",
+      "IP-Adresse, Standortdaten",
+      "Gesundheitsdaten, politische Meinung, religiöse Überzeugung",
+      "Vor- und Nachname"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Was ist 'Privacy by Design'?",
+    "choices": [
+      "Der Datenschutz wird erst nach Abschluss der Entwicklung berücksichtigt",
+      "Datenschutz wird von Anfang an in die Entwicklung integriert",
+      "Der Quellcode wird anonymisiert",
+      "Die Software wird nur auf privaten Geräten genutzt"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Welches Verfahren wird häufig zur sicheren Übertragung von Passwörtern im Internet genutzt?",
+    "choices": [
+      "MD5 ohne Salt",
+      "HTTPS mit TLS",
+      "Base64",
+      "Plaintext über HTTP"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Was versteht man unter einem 'Zero-Day-Exploit'?",
+    "choices": [
+      "Eine Schwachstelle, die bereits seit mehr als einem Jahr bekannt ist",
+      "Eine Schwachstelle, für die es noch keinen Patch gibt",
+      "Ein Computervirus ohne Schadcode",
+      "Eine Firewall-Regel, die alle Ports blockiert"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Was ist der Hauptvorteil einer Zwei-Faktor-Authentifizierung?",
+    "choices": [
+      "Sie beschleunigt den Login-Prozess",
+      "Sie erhöht die Sicherheit, indem zwei verschiedene Faktoren kombiniert werden",
+      "Sie ist einfacher zu implementieren",
+      "Sie macht Passwörter überflüssig"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Welches Verschlüsselungsverfahren wird im HTTPS-Protokoll typischerweise verwendet?",
+    "choices": [
+      "AES",
+      "RSA",
+      "Blowfish",
+      "MD5"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welcher JavaScript-Ausdruck gibt `true` zurück?\n```js\nconsole.log(0 == '0');\n```",
+    "choices": [
+      "0 == '0'",
+      "0 === '0'",
+      "null === undefined",
+      "'5' === 5"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Welches Konto wird bei der doppelten Buchführung typischerweise im Soll gebucht, wenn Waren auf Ziel eingekauft werden?",
+    "choices": [
+      "Kasse",
+      "Forderungen",
+      "Wareneingang",
+      "Eigenkapital"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "WISO",
+    "question": "Was ist das Bruttoinlandsprodukt (BIP)?",
+    "choices": [
+      "Die Summe aller im Inland produzierten Waren und Dienstleistungen zu Marktpreisen",
+      "Die Summe aller Einkommen der Bürger im Ausland",
+      "Der jährliche Bundeshaushalt",
+      "Die Menge an Exporten"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Projektmanagement",
+    "question": "Welche Projektmanagement-Methode arbeitet in festen Iterationen und legt Wert auf tägliche Meetings?",
+    "choices": [
+      "Scrum",
+      "Wasserfallmodell",
+      "Kanban",
+      "V-Modell XT"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Welche der folgenden Informationen gilt nach DSGVO als besonders schützenswert?",
+    "choices": [
+      "IP-Adresse",
+      "Gesundheitsdaten",
+      "E-Mail-Adresse",
+      "Postleitzahl"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welche Ausgabe erzeugt folgender Python-Code?\n```python\nx = [1, 2, 3]\nprint(x * 2)\n```",
+    "choices": [
+      "[2, 4, 6]",
+      "[1, 2, 3, 1, 2, 3]",
+      "Fehler",
+      "[1, 4, 9]"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Was ist der Zweck eines Salt beim Hashen von Passwörtern?",
+    "choices": [
+      "Erhöht die Hashlänge",
+      "Verhindert Rainbow-Table-Angriffe",
+      "Verschlüsselt das Passwort direkt",
+      "Komprimiert die Daten"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Wie nennt man den Differenzbetrag zwischen Soll- und Habenseite in der Bilanz?",
+    "choices": [
+      "Saldo",
+      "Eigenkapital",
+      "Aktiva",
+      "Passiva"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "WISO",
+    "question": "Was beschreibt der Begriff 'Opportunitätskosten'?",
+    "choices": [
+      "Kosten, die durch nicht genutzte Möglichkeiten entstehen",
+      "Kosten für neue Maschinen",
+      "Zusätzliche Steuern",
+      "Variable Kosten im Produktionsprozess"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was ist das Ergebnis von `typeof NaN` in JavaScript?",
+    "choices": [
+      "'number'",
+      "'NaN'",
+      "'undefined'",
+      "'object'"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Projektmanagement",
+    "question": "Welche Rolle ist in Scrum primär für das Product Backlog verantwortlich?",
+    "choices": [
+      "Scrum Master",
+      "Product Owner",
+      "Entwicklerteam",
+      "Stakeholder"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Wie lange dürfen personenbezogene Daten laut DSGVO ohne Zweckbindung gespeichert werden?",
+    "choices": [
+      "Maximal 2 Jahre",
+      "Unbegrenzt",
+      "Nur so lange wie für den Zweck erforderlich",
+      "10 Jahre"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Welches Protokoll wird zur sicheren Dateiübertragung verwendet?",
+    "choices": [
+      "FTP",
+      "SFTP",
+      "HTTP",
+      "Telnet"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was gibt folgender SQL-Befehl zurück?\n```sql\nSELECT COUNT(*) FROM users;\n```",
+    "choices": [
+      "Die Anzahl der Tabellen",
+      "Die Anzahl der Benutzer",
+      "Die Summe aller IDs",
+      "Die Anzahl der Spalten"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Was versteht man unter 'Abschreibung'?",
+    "choices": [
+      "Rückzahlung eines Kredits",
+      "Wertminderung eines Vermögensgegenstands",
+      "Verkauf von Waren",
+      "Erhöhung des Eigenkapitals"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "WISO",
+    "question": "Was ist das Ziel der Konjunkturpolitik?",
+    "choices": [
+      "Stabilisierung der Wirtschaftslage",
+      "Förderung einzelner Unternehmen",
+      "Reduzierung der Unternehmenssteuern",
+      "Erhöhung der Exporte"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Welche Ausgabe erzeugt folgender Code in JavaScript?\n```js\nconsole.log([1, 2, 3] + [4, 5, 6]);\n```",
+    "choices": [
+      "'1,2,34,5,6'",
+      "'1,2,3,4,5,6'",
+      "'[1,2,3,4,5,6]'",
+      "'1,2,3,4,5,6'"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Projektmanagement",
+    "question": "Welche Projektphase umfasst die Erstellung eines Pflichtenhefts?",
+    "choices": [
+      "Planung",
+      "Durchführung",
+      "Abschluss",
+      "Initiierung"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Datenschutz",
+    "question": "Welche Institution überwacht in Deutschland die Einhaltung der DSGVO?",
+    "choices": [
+      "Das Bundesdatenschutzamt",
+      "Die Landesdatenschutzbehörden",
+      "Die Polizei",
+      "Das Bundesfinanzministerium"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "IT-Sicherheit",
+    "question": "Welches dieser Passwörter ist am sichersten?",
+    "choices": [
+      "Sommer2024",
+      "abc123",
+      "T!m3_tr@v3l#42",
+      "Passwort"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "category": "Rechnungswesen",
+    "question": "Welche der folgenden Größen ist eine Liquiditätskennzahl?",
+    "choices": [
+      "Eigenkapitalquote",
+      "Liquidität 2. Grades",
+      "Umsatzrendite",
+      "Abschreibungsquote"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "category": "WISO",
+    "question": "Welches Recht haben Arbeitnehmer laut Betriebsverfassungsgesetz?",
+    "choices": [
+      "Mitbestimmung",
+      "Gewinnbeteiligung",
+      "Urlaubsanspruch",
+      "Home-Office-Garantie"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "category": "Programmierung",
+    "question": "Was ist in Python der Unterschied zwischen `is` und `==`?",
+    "choices": [
+      "`is` vergleicht Identität, `==` vergleicht Wertgleichheit",
+      "`is` vergleicht Werte, `==` vergleicht Objekte",
+      "`is` ist ein Alias für `==`",
+      "Kein Unterschied"
+    ],
+    "answerIndex": 0
   }
 ]
