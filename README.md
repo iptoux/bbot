@@ -28,9 +28,11 @@ This Discord bot can receive and send messages, and includes integration with Op
    OPENAI_API_KEY=your_openai_api_key_here
    OPENAI_MODEL=openai/gpt-oss-20b
    LM_STUDIO_API_URL=http://localhost:1234/v1
+   FACTS_VIA_LLM=true
    ASSISTANT_ROLE=You are a helpful assistant.
    SYSTEM_PROMPT=Provide direct responses without showing your thinking process.
    ```
+   - `FACTS_VIA_LLM`: When set to `true`, the bot will use the configured LLM (OpenAI or LM Studio) to extract persistent user facts from conversations. When omitted or `false`, a lightweight regex-based fallback is used.
    - Replace `your_discord_bot_token_here` with your actual Discord bot token
    - For OpenAI API: Replace `your_openai_api_key_here` with your OpenAI API key
    - For LM Studio: Set `LM_STUDIO_API_URL` to the URL of your local LM Studio API server (typically http://localhost:1234/v1)
@@ -132,10 +134,18 @@ Example:
 !llm Tell me a joke about programming
 ```
 
-The bot will:
-1. Process your request
+You can also attach image(s) to your !llm message to request visual analysis:
+- Example: attach a photo and send `!llm What is shown in this image?`
+- Up to 5 images are processed per request. Supported formats include PNG, JPG/JPEG, GIF, WEBP, BMP, and TIFF.
+
+Behavior details:
+1. Process your request (including downloading and preparing image attachments if present)
 2. Send the prompt to either OpenAI API or LM Studio with the assistant role and system instructions defined in your environment variables
 3. Stream the response back to the Discord chat, updating the message as new content arrives
+
+Notes for images:
+- For image analysis, the bot intentionally does not inject user memory or "carryover" context to avoid biasing visual descriptions.
+- The system prompt instructs the model to analyze only the current images and to avoid including any image URLs or markdown in the reply. The bot additionally sanitizes the output to remove any leaked URLs.
 
 You can customize the assistant's personality and behavior by modifying the `ASSISTANT_ROLE` and `SYSTEM_PROMPT` environment variables in your env.local file. The default configuration instructs the LLM to provide clean, concise responses without showing its thinking process or internal deliberation.
 
@@ -209,12 +219,13 @@ The bot includes a Retrieval-Augmented Generation (RAG) system that allows it to
    - Augments the LLM prompt with this context
    - Generates a response that takes into account the user's history and preferences
 
-3. **Facts Definition**: Facts are simple statements about the user stored as strings in an array. Facts can be defined in two ways:
-   - **Automatic Extraction**: The bot automatically extracts facts from user messages using pattern matching
-     - "My name is John" → Stores "User's name is John"
-     - "I live in Berlin" → Stores "User lives in Berlin"
-     - "I like pizza" → Stores "User likes pizza"
-   - **Manual Addition**: Users can manually add facts using the `!fact add` command
+3. **Facts Definition**: Facts are simple, persistent statements about the user stored as strings in an array. Facts can be created in two ways:
+   - **Automatic Extraction (LLM-first, with fallback)**: When `FACTS_VIA_LLM=true`, the bot asks the LLM to extract new persistent facts from recent conversation context. The LLM is instructed to output ONLY a JSON array of short, stable, verifiable facts (max 5) and to avoid temporary states or duplicates. If LLM extraction is disabled or fails, the bot falls back to simple pattern matching.
+     - Examples (fallback patterns):
+       - "My name is John" → Stores "User's name is John"
+       - "I live in Berlin" → Stores "User lives in Berlin"
+       - "I like pizza" → Stores "User likes pizza"
+   - **Manual Addition**: Users can add facts using the `!fact add` command
      - `!fact add I speak German` → Stores "I speak German"
      - `!fact add I prefer dark mode` → Stores "I prefer dark mode"
 
@@ -237,6 +248,45 @@ Since the bot stores user information:
 - The `user-memory.json` file should be properly secured
 - Users should be informed that the bot remembers information from conversations
 - Consider implementing a command to allow users to view or delete their stored information
+
+### LLM-based User Facts Extraction (Configuration)
+
+To enable LLM-based extraction of user facts, set `FACTS_VIA_LLM=true` in `env.local` and configure one of the following:
+- OpenAI API: set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` (default `openai/gpt-oss-20b`).
+- LM Studio: set `LM_STUDIO_API_URL` (e.g., `http://localhost:1234/v1`) and set `OPENAI_MODEL` to your local model's name. When using LM Studio, if the model name begins with `openai/`, the prefix is removed automatically.
+
+Behavior details:
+- The bot passes a compact context (up to the last 5 interactions and the current exchange) to the LLM and requests ONLY a JSON array of up to 5 short, stable facts.
+- Facts should be persistent (avoid temporary moods, fleeting context) and verifiable from the conversation.
+- New facts are deduplicated against existing ones before being saved to `user-memory.json`.
+- If LLM extraction errors or returns invalid JSON, the bot falls back to regex-based extraction.
+
+Notes:
+- Manual fact management is always available via `!fact add <fact>` and `!memory view/delete`.
+- Interactions in memory are bounded (last 10 are kept) to prevent unbounded growth.
+
+## Image Processing and Vision
+
+The bot supports multimodal prompts with image attachments when using `!llm`.
+
+How it works under the hood (bot.js):
+- Attachment detection: Only image files are included. The bot checks either the attachment content type or the filename extension (png, jpg/jpeg, gif, webp, bmp, tiff). Duplicate URLs are removed and a maximum of 5 images is processed per request.
+- Logging: The bot logs the list of image URLs it is about to process to aid troubleshooting.
+- Prompt behavior: For image analysis, the bot crafts a special system instruction to:
+  - Analyze only the images attached to the current message
+  - Avoid relying on or referencing older images or previous results
+  - Avoid including image URLs or image markdown in the reply
+  The output is additionally sanitized to remove any leaked image URLs or markdown link forms.
+- Context policy: For image requests, user memory and recent carryover context are not injected to reduce bias in visual descriptions.
+- Model backends:
+  - OpenAI API: Image URLs are sent directly as `image_url` content parts in the Chat Completions request.
+  - LM Studio: Image URLs are fetched by the bot and converted to base64 data URLs (data:<mime>;base64,...) before being sent, because some LM Studio models expect base64 in the `url` field.
+    - Guardrail: Each image has a ~10 MB size limit; oversized or failed downloads are skipped. If all conversions fail, the bot falls back to a text-only prompt and tells the model that images could not be loaded.
+- Streaming: Responses are streamed and edited in place, with long outputs split into Discord-safe chunks (<=2000 characters).
+
+Tips:
+- If your model cannot handle images, simply don’t attach any. The bot will behave as a text-only assistant.
+- If you see errors when using LM Studio with images, check that the LM Studio server is running and try smaller images. Review the console logs for details.
 
 ## API Endpoints
 
@@ -268,6 +318,13 @@ If you encounter issues:
 5. Ensure the model name in your env.local file matches the name in LM Studio
 6. Check LM Studio logs for any errors
 7. Try restarting the LM Studio server if it becomes unresponsive
+
+### User Facts Extraction Troubleshooting
+1. LLM not used: Ensure `FACTS_VIA_LLM=true` and either `OPENAI_API_KEY` is set or `LM_STUDIO_API_URL` is reachable.
+2. Model name with LM Studio: If your `OPENAI_MODEL` starts with `openai/`, the bot will automatically strip the prefix for LM Studio.
+3. No new facts: The LLM may have determined there are no persistent facts to add, or it produced invalid JSON; the bot then falls back to regex.
+4. Duplicates: The bot deduplicates facts against stored ones; identical facts won’t be re-added.
+5. Storage file: Verify that `user-memory.json` is writable by the process.
 
 ## Dependencies
 
