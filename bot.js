@@ -167,7 +167,7 @@ client.once("ready", async () => {
 });
 
 client.on("messageCreate", async (message) => {
-    console.log(`Received message from ${message.author.tag} (${message.author.id}): ${message.content} in channel: ${message.channel.name}`);
+    console.log(message.channel.name);
 
     // Ignore messages from the bot itself
     if (message.author.bot) return;
