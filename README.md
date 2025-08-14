@@ -67,9 +67,11 @@ to generate responses. The bot can remember users (facts, preferences, recent in
 2. Create env.local in the project root (see Configuration).
 3. Start the bot:
    node bot.js
-4. In your Discord server, type:
+4. In your Discord server, try:
    !cmd
-   to see commands.
+   to see commands, and
+   !quiz 3
+   to start a short 3-question quiz.
 
 ## Installation
 
@@ -99,6 +101,12 @@ FACTS_VIA_LLM=true
 ASSISTANT_ROLE=You are a helpful assistant.
 SYSTEM_PROMPT=Provide direct responses without showing your thinking process.
 
+# Quiz settings (see section "Quiz settings")
+# Time limit per question in seconds (min 5, default 20 if unset or lower)
+# QUIZ_ANSWER_SECONDS=20
+# Cooldown between quiz starts per user in minutes (min 1, default 60 if unset or lower)
+# QUIZ_COOLDOWN_MINUTES=60
+
 Variables explained:
 - DISCORD_BOT_TOKEN: Your Discord bot token.
 - BOT_PORT: Port for the Express server (default 4000).
@@ -124,8 +132,12 @@ LM Studio:
 ### Quiz settings
 
 Two environment variables control the Quiz behavior:
-- QUIZ_ANSWER_SECONDS: Time limit per question (seconds). Minimum 5. Default 20.
-- QUIZ_COOLDOWN_MINUTES: Cooldown before a user can start a new quiz (minutes). Minimum 1. Default 60.
+- QUIZ_ANSWER_SECONDS: Time limit per question (seconds). Minimum 5. Default 20. Used to set the per-question timer displayed to players.
+- QUIZ_COOLDOWN_MINUTES: Cooldown before a user can start a new quiz (minutes). Minimum 1. Default 60. Enforced per user (across channels), with remaining time and next allowed time shown on attempt.
+
+Where to configure:
+- Add them to env.local (see template above). The bot reads env.local on startup.
+- The bot logs the effective values (after applying minimums) at startup for visibility.
 
 Example env.local additions:
 
@@ -200,6 +212,7 @@ Examples:
 
 !toplist
 - Shows the top users by total quiz points (server‑wide).
+- Persistence: Quiz points are stored per user in user-memory.json (quizPoints). To reset points, stop the bot and edit or delete the relevant entries (or the file) before restarting.
 
 Question catalog (quiz-questions.json):
 - File location: quiz-questions.json at project root.
