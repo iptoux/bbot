@@ -282,43 +282,43 @@ client.on("messageCreate", async (message) => {
     }
 
     else if (message.content.toLowerCase().includes("angular")) {
-        const responseMessage = await message.reply(randomJoke("angular"));
+        const responseMessage = await message.reply(randomJoke("angular",message.channel.name));
     }
     else if (message.content.toLowerCase().includes("concrete5")) {
-        const responseMessage = await message.reply(randomJoke("concrete5"));
+        const responseMessage = await message.reply(randomJoke("concrete5",message.channel.name));
     }
 
     else if (message.content.toLowerCase().includes("css")) {
-        const responseMessage = await message.reply(randomJoke("css"));
+        const responseMessage = await message.reply(randomJoke("css",message.channel.name));
     }
 
     else if (message.content.toLowerCase().includes("django")) {
-        const responseMessage = await message.reply(randomJoke("django"));
+        const responseMessage = await message.reply(randomJoke("django",message.channel.name));
     }
 
 
     else if (message.content.toLowerCase().includes("filemaker")) {
-        const responseMessage = await message.reply(randomJoke("filemaker"));
+        const responseMessage = await message.reply(randomJoke("filemaker",message.channel.name));
     }
 
     else if (message.content.toLowerCase().includes("html")) {
-        const responseMessage = await message.reply(randomJoke("html"));
+        const responseMessage = await message.reply(randomJoke("html",message.channel.name));
     }
 
     else if (message.content.toLowerCase().includes("javascript")) {
-        const responseMessage = await message.reply(randomJoke("javascript"));
+        const responseMessage = await message.reply(randomJoke("javascript",message.channel.name));
     }
 
     else if (message.content.toLowerCase().includes("php")) {
-        const responseMessage = await message.reply(randomJoke("php"));
+        const responseMessage = await message.reply(randomJoke("php",message.channel.name));
     }
 
     else if (message.content.toLowerCase().includes("typescript")) {
-        const responseMessage = await message.reply(randomJoke("typescript"));
+        const responseMessage = await message.reply(randomJoke("typescript",message.channel.name));
     }
 
     else if (message.content.toLowerCase().includes("wordpress")) {
-        const responseMessage = await message.reply(randomJoke("wordpress"));
+        const responseMessage = await message.reply(randomJoke("wordpress",message.channel.name));
     }
 
     // Handle memory commands
