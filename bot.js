@@ -164,6 +164,8 @@ let notifyList = [];
 // Quiz state
 const quizSessions = new Map(); // channelId -> session
 let quizQuestionsCache = null;
+// Rate limit: track when each user last started a quiz (per user, across channels)
+const lastQuizStartByUser = new Map();
 
 async function loadQuizQuestions() {
     if (quizQuestionsCache) return quizQuestionsCache;
@@ -182,9 +184,10 @@ async function loadQuizQuestions() {
 function formatQuestion(q, index, total) {
     const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
     const lines = [];
-    lines.push(`Question ${index + 1}/${total}: ${q.question}`);
+    const categorySuffix = q.category ? ` [Kategorie: ${q.category}]` : '';
+    lines.push(`Frage ${index + 1}/${total}${categorySuffix}: ${q.question}`);
     lines.push(q.choices.map((opt, i) => `${letters[i]}. ${opt}`).join('\n'));
-    lines.push('Reply with the letter of your answer (A, B, C, ...). Your first answer counts.');
+    lines.push('Sende den Buchstaben deiner Antwort (A, B, C, ...) einfach hier in den Kanal. Nicht auf die Frage antworten/quoten. Nur deine erste Antwort zählt. Wenn deine Antwort gezählt wurde, reagiert der Bot mit ✅.');
     return lines.join('\n');
 }
 
@@ -204,7 +207,7 @@ client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
 
     if (message.content.startsWith("!llm") && message.author.tag.toLowerCase() === "volkan") {
-        return message.reply("Sorry, but you have no more credits left, try inviting friends to get 20 credits more!");
+        return message.reply("Sorry, du hast keine Credits mehr. Lade Freunde ein, um 20 weitere Credits zu erhalten!");
     }
 
     // Check if the bot is mentioned in the message
@@ -214,7 +217,7 @@ client.on("messageCreate", async (message) => {
             return; // do not send generic mention reply during quiz
         }
         console.log("Bot was mentioned in a message");
-        return message.reply("Hello! I'm your bot assistant. You can use the !llm command followed by your query to get a response.");
+        return message.reply("Hallo! Ich bin dein Bot-Assistent. Du kannst den Befehl !llm nutzen, gefolgt von deiner Frage.");
     }
 
     // QUIZ COMMANDS
@@ -242,7 +245,7 @@ client.on("messageCreate", async (message) => {
             active: true
         };
         quizSessions.set(channelId, session);
-        await message.channel.send(`Starting a quiz with ${selected.length} question(s)! Everyone can participate. Bonus +2 points if you get all correct.`);
+        await message.channel.send(`Quiz startet mit ${selected.length} Frage(n)! Alle können mitmachen. Bonus +2 Punkte, wenn du alle richtig hast.`);
         // Start asking sequentially
         for (let i = 0; i < selected.length; i++) {
             session.currentIndex = i;
@@ -261,6 +264,8 @@ client.on("messageCreate", async (message) => {
                 if (idx >= 0) {
                     map.set(uid, idx);
                     session.participants.add(uid);
+                    // Acknowledge recognized answer with a checkmark reaction
+                    try { m.react('✅').catch(() => {}); } catch {}
                 }
             });
             session.answersPerQuestion.set(i, map);
@@ -276,9 +281,9 @@ client.on("messageCreate", async (message) => {
             const correctLetter = letters[correctIdx];
             if (winners.length) {
                 const mentions = winners.map(id => `<@${id}>`).join(', ');
-                await message.channel.send(`Time's up! Correct answer: ${correctLetter}. Well done: ${mentions}`);
+                await message.channel.send(`Zeit ist um! Richtige Antwort: ${correctLetter}. Glückwunsch: ${mentions}`);
             } else {
-                await message.channel.send(`Time's up! Correct answer: ${correctLetter}. No correct answers this time.`);
+                await message.channel.send(`Zeit ist um! Richtige Antwort: ${correctLetter}. Dieses Mal gab es keine richtigen Antworten.`);
             }
         }
         // Finish quiz: compute points and bonus
@@ -300,15 +305,15 @@ client.on("messageCreate", async (message) => {
             const member = await message.guild.members.fetch(r.uid).catch(() => null);
             const uname = member?.user?.username || null;
             await addQuizPoints(r.uid, uname, r.points);
-            const bonusTxt = r.bonus ? ` (+${r.bonus} bonus)` : '';
-            lines.push(`- ${member ? member.user.username : 'User'}: ${r.correct}/${totalQ} correct, +${r.points} points${bonusTxt}`);
+            const bonusTxt = r.bonus ? ` (+${r.bonus} Bonus)` : '';
+            lines.push(`- ${member ? member.user.username : 'User'}: ${r.correct}/${totalQ} richtig, +${r.points} Punkte${bonusTxt}`);
         }
         session.active = false;
         quizSessions.delete(channelId);
         if (lines.length) {
-            await message.channel.send([`Quiz finished! Results:`, ...lines, '', 'See the server toplist with !toplist'].join('\n'));
+            await message.channel.send([`Quiz beendet! Ergebnisse:`, ...lines, '', 'Server-Topliste mit !toplist ansehen'].join('\n'));
         } else {
-            await message.channel.send('Quiz finished! No participants.');
+            await message.channel.send('Quiz beendet! Keine Teilnehmer.');
         }
         return; // done handling !quiz
     }
@@ -316,10 +321,10 @@ client.on("messageCreate", async (message) => {
     if (message.content.startsWith("!toplist")) {
         const tops = await getQuizToplist(10);
         if (!tops.length) {
-            return message.reply("No quiz points yet. Start with !quiz");
+            return message.reply("Noch keine Quiz-Punkte. Starte mit !quiz");
         }
-        const lines = tops.map((t, i) => `${i + 1}. ${t.username || 'User ' + t.userId}: ${t.quizPoints} pts`);
-        return message.reply(["Top Quiz Players:", ...lines].join('\n'));
+        const lines = tops.map((t, i) => `${i + 1}. ${t.username || 'User ' + t.userId}: ${t.quizPoints} Punkte`);
+        return message.reply(["Top Quiz-Spieler:", ...lines].join('\n'));
     }
 
     if (message.content.startsWith("!llm")) {
@@ -345,14 +350,14 @@ client.on("messageCreate", async (message) => {
         
         // If no prompt and no images, ask for input
         if (!prompt && imageUrls.length === 0) {
-            return message.reply("Please provide a message after !llm or attach image(s). Example: !llm Tell me a joke");
+            return message.reply("Bitte gib nach !llm eine Nachricht ein oder füge Bild(er) an. Beispiel: !llm Erzähl mir einen Witz");
         }
         
         try {
             console.log(`Processing LLM request: "${prompt}"`);
             
             // Send initial response to indicate processing
-            const responseMessage = await message.reply("Processing your request...");
+            const responseMessage = await message.reply("Verarbeite deine Anfrage...");
             
             // For LM Studio, we may need to adjust the model name format
             // LM Studio typically uses the model name without the "openai/" prefix
@@ -562,13 +567,13 @@ client.on("messageCreate", async (message) => {
                 await extractUserFacts(userId, prompt, sanitizedFinal);
                 console.log(`Recorded interaction for user ${username} (${userId})`);
             } else {
-                await responseMessage.edit("No response generated. Please try again.");
+                await responseMessage.edit("Keine Antwort erzeugt. Bitte versuche es erneut.");
             }
         } catch (error) {
             const apiType = isUsingLMStudio ? "LM Studio API" : "OpenAI API";
             console.error(`Error with ${apiType}:`, error);
             
-            let errorMessage = "Sorry, there was an error processing your request, i informed my Master. Please try again later.";
+            let errorMessage = "Entschuldigung, bei der Verarbeitung deiner Anfrage ist ein Fehler aufgetreten. Ich habe meinen Besitzer informiert. Bitte versuche es später erneut.";
             
             // Add more specific error message for LM Studio
             if (isUsingLMStudio) {
@@ -635,7 +640,7 @@ client.on("messageCreate", async (message) => {
         if (command === "view") {
             try {
                 // Send initial response in the channel
-                const channelResponse = await message.reply("Retrieving your stored information... I'll send it to you as a private message.");
+                const channelResponse = await message.reply("Ich rufe deine gespeicherten Informationen ab... Ich sende sie dir per Privatnachricht.");
                 
                 // Get formatted user data
                 const formattedData = await formatUserDataForDisplay(userId);
@@ -644,19 +649,19 @@ client.on("messageCreate", async (message) => {
                 await message.author.send(formattedData);
                 
                 // Update the channel message to confirm the DM was sent
-                await channelResponse.edit("✅ Your stored information has been sent to you as a private message.");
+                await channelResponse.edit("✅ Deine gespeicherten Informationen wurden dir per Privatnachricht gesendet.");
                 console.log(`Displayed memory data for user ${username} (${userId}) via DM`);
             } catch (error) {
                 console.error("Error displaying user memory:", error);
-                message.reply("Sorry, there was an error retrieving your information. Please try again later.");
+                message.reply("Entschuldigung, beim Abrufen deiner Informationen ist ein Fehler aufgetreten. Bitte versuche es später erneut.");
             }
         } else if (command === "delete") {
             try {
                 // Ask for confirmation
                 const confirmMessage = await message.reply(
-                    "⚠️ **Are you sure you want to delete all your stored information?** ⚠️\n" +
-                    "This action cannot be undone. All your stored facts, preferences, and interaction history will be permanently deleted.\n\n" +
-                    "Reply with `!confirm-delete` within 30 seconds to confirm deletion."
+                    "⚠️ **Bist du sicher, dass du alle deine gespeicherten Informationen löschen möchtest?** ⚠️\n" +
+                    "Diese Aktion kann nicht rückgängig gemacht werden. Alle gespeicherten Fakten, Einstellungen und Interaktionsverläufe werden dauerhaft gelöscht.\n\n" +
+                    "Antworte innerhalb von 30 Sekunden mit `!confirm-delete`, um die Löschung zu bestätigen."
                 );
                 
                 // Create a filter for the confirmation message
@@ -671,25 +676,25 @@ client.on("messageCreate", async (message) => {
                     const deleted = await deleteUserData(userId);
                     
                     if (deleted) {
-                        await confirmMessage.edit("✅ All your stored information has been deleted successfully.");
+                        await confirmMessage.edit("✅ Alle deine gespeicherten Informationen wurden erfolgreich gelöscht.");
                         console.log(`Deleted memory data for user ${username} (${userId})`);
                     } else {
-                        await confirmMessage.edit("No stored information found for your user.");
+                        await confirmMessage.edit("Keine gespeicherten Informationen für deinen Benutzer gefunden.");
                     }
                 } catch (timeoutError) {
                     // User didn't confirm in time
-                    await confirmMessage.edit("Deletion cancelled. Your information remains unchanged.");
+                    await confirmMessage.edit("Löschung abgebrochen. Deine Informationen bleiben unverändert.");
                 }
             } catch (error) {
                 console.error("Error deleting user memory:", error);
-                message.reply("Sorry, there was an error deleting your information. Please try again later.");
+                message.reply("Entschuldigung, beim Löschen deiner Informationen ist ein Fehler aufgetreten. Bitte versuche es später erneut.");
             }
         } else {
             // Unknown memory command
             message.reply(
-                "Unknown memory command. Available commands:\n" +
-                "- `!memory view` - View your stored information\n" +
-                "- `!memory delete` - Delete all your stored information"
+                "Unbekannter memory-Befehl. Verfügbare Befehle:\n" +
+                "- `!memory view` - Zeige deine gespeicherten Informationen\n" +
+                "- `!memory delete` - Lösche alle deine gespeicherten Informationen"
             );
         }
     }
@@ -708,22 +713,22 @@ client.on("messageCreate", async (message) => {
             const fact = message.content.substring(10).trim();
             
             if (!fact) {
-                return message.reply("Please provide a fact to add. Example: `!fact add I like programming`");
+                return message.reply("Bitte gib einen Fakt an, den du hinzufügen möchtest. Beispiel: `!fact add Ich mag Programmierung`");
             }
             
             try {
                 await addUserFact(userId, fact);
-                message.reply(`✅ Fact added: "${fact}"`);
+                message.reply(`✅ Fakt hinzugefügt: "${fact}"`);
                 console.log(`Added fact for user ${username} (${userId}): "${fact}"`);
             } catch (error) {
                 console.error("Error adding user fact:", error);
-                message.reply("Sorry, there was an error adding your fact. Please try again later.");
+                message.reply("Entschuldigung, beim Hinzufügen deines Fakts ist ein Fehler aufgetreten. Bitte versuche es später erneut.");
             }
         } else {
             // Unknown fact command
             message.reply(
-                "Unknown fact command. Available commands:\n" +
-                "- `!fact add <fact>` - Add a fact about yourself"
+                "Unbekannter fact-Befehl. Verfügbare Befehle:\n" +
+                "- `!fact add <Fakt>` - Füge einen Fakt über dich hinzu"
             );
         }
     }
@@ -743,22 +748,22 @@ client.on("messageCreate", async (message) => {
             const value = commandParts.slice(2).join(' ');
             
             if (!key || !value) {
-                return message.reply("Please provide a key and value. Example: `!preference set language German`");
+                return message.reply("Bitte gib einen Schlüssel und einen Wert an. Beispiel: `!preference set sprache Deutsch`");
             }
             
             try {
                 await setUserPreference(userId, key, value);
-                message.reply(`✅ Preference set: "${key}" = "${value}"`);
+                message.reply(`✅ Einstellung gesetzt: "${key}" = "${value}"`);
                 console.log(`Set preference for user ${username} (${userId}): "${key}" = "${value}"`);
             } catch (error) {
                 console.error("Error setting user preference:", error);
-                message.reply("Sorry, there was an error setting your preference. Please try again later.");
+                message.reply("Entschuldigung, beim Setzen deiner Einstellung ist ein Fehler aufgetreten. Bitte versuche es später erneut.");
             }
         } else {
             // Unknown preference command
             message.reply(
-                "Unknown preference command. Available commands:\n" +
-                "- `!preference set <key> <value>` - Set a preference"
+                "Unbekannter preference-Befehl. Verfügbare Befehle:\n" +
+                "- `!preference set <Schlüssel> <Wert>` - Setze eine Einstellung"
             );
         }
     }
@@ -768,24 +773,24 @@ client.on("messageCreate", async (message) => {
         console.log("Processing !cmd command");
         
         const commandsList = [
-            "**Available Commands:**",
+            "**Verfügbare Befehle:**",
             "",
-            "**`!cmd`** - Display this list of commands",
+            "**`!cmd`** - Diese Befehlsübersicht anzeigen",
             "",
-            "**`!llm <prompt>`** - Send a prompt to the AI and get a response",
-            "Example: `!llm Tell me a joke about programming`",
+            "**`!llm <prompt>`** - Sende eine Anfrage an die KI und erhalte eine Antwort",
+            "Beispiel: `!llm Erzähl mir einen Programmier-Witz`",
             "",
-            "**`!memory view`** - View your stored information (sent as a private message)",
-            "**`!memory delete`** - Delete all your stored information",
+            "**`!memory view`** - Zeige deine gespeicherten Informationen (per Privatnachricht)",
+            "**`!memory delete`** - Lösche alle deine gespeicherten Informationen",
             "",
-            "**`!fact add <fact>`** - Add a fact about yourself",
-            "Example: `!fact add I like programming`",
+            "**`!fact add <Fakt>`** - Füge einen Fakt über dich hinzu",
+            "Beispiel: `!fact add Ich mag Programmierung`",
             "",
-            "**`!preference set <key> <value>`** - Set a preference",
-            "Example: `!preference set language German`",
+            "**`!preference set <Schlüssel> <Wert>`** - Setze eine Einstellung",
+            "Beispiel: `!preference set sprache Deutsch`",
             "",
-            "**`!quiz [count]`** - Start a quiz in the channel (up to 5 questions, default 5). Everyone can answer.",
-            "**`!toplist`** - Show top users by quiz points"
+            "**`!quiz [Anzahl]`** - Starte ein Quiz im Kanal (bis zu 5 Fragen, Standard 5). Alle können antworten.",
+            "**`!toplist`** - Zeige die Top‑Nutzer nach Quiz‑Punkten"
         ].join("\n");
         
         message.reply(commandsList);
