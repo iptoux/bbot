@@ -20,4 +20,4 @@ RUN mkdir -p /app/data
 EXPOSE 4000
 
 # Command to run the application
-CMD ["node", "bot.js"]
+CMD ["npm", "start"]
