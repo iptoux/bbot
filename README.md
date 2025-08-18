@@ -263,6 +263,18 @@ Jokes catalog (jokes.json):
 - To add or edit jokes, modify jokes.json and restart the bot.
 - Automatic joke responses to keywords in normal chat have been disabled; use the !joke command instead.
 
+### Server activity statistics
+
+!stats [N]
+- Shows a toplist of the most active users and channels by number of messages in this server (guild‑only). Default N=10, min 3, max 25.
+- You can exclude specific channels from the toplists by setting STATS_EXCLUDE_CHANNELS in env.local. This accepts channel IDs, <#ID> mentions, or names (case‑insensitive, suffix match). Example:
+  STATS_EXCLUDE_CHANNELS=┣〢dev-spam,dev-spam,<#123456789012345678>
+
+!stats reset
+- Admin/Mods only (requires one of: Administrator, Manage Guild, Manage Channels, or Manage Messages).
+- Resets message‑based activity statistics for this server by deleting stored message events for the guild.
+- Command and joke counters are not affected.
+
 ## User Memory (RAG)
 
 - Stores: username, recent interactions, user facts, preferences.
@@ -332,3 +344,58 @@ Quiz:
 ## License
 
 ISC (see package.json).
+
+
+
+## Bot Control & Stats API (New)
+
+This project now includes a modular API server alongside the Discord bot.
+
+- Start (new modular entrypoint):
+  - npm start
+  - which runs: node src/index.js
+  - Legacy: node bot.js still works, but new control/stats endpoints live under src/.
+- Security: All /bot and /stats endpoints require the X-API-Key header.
+
+Environment variables (supported names):
+- API_KEY: required to access the API.
+- PORT or BOT_PORT: API port (default 3000 if neither is set).
+- DISCORD_TOKEN or DISCORD_BOT_TOKEN: Discord bot token.
+- RESTART_MODE: soft | hard (default soft). hard calls process.exit(0) and requires a process manager (PM2/NSSM) to restart.
+- COUNT_WHEN_DISABLED: true | false (default true) – if false, messages are not counted while the bot is disabled.
+- STATS_EXCLUDE_CHANNELS: comma-separated list of channel IDs, <#ID> mentions, or names to exclude from in-chat !stats toplists (e.g., STATS_EXCLUDE_CHANNELS=┣〢dev-spam,dev-spam,<#123456789012345678>).
+- STATS_BACKEND: json (default). sqlite is not implemented in this minimal setup.
+- DATA_DIR: directory for persistent files (default ./data).
+
+Endpoints (all JSON; send X-API-Key header):
+- GET /bot/status → { enabled, loggedIn, uptimeMs, version, guilds, users }
+- POST /bot/enable → { enabled: true }
+- POST /bot/disable → { enabled: false }
+- POST /bot/restart { "mode": "soft"|"hard" } → 202 { ok: true, mode }
+- GET /stats → overview totals + top lists
+- GET /stats/messages?from=ISO&to=ISO&channelId=...&userId=...
+- GET /stats/users?top=10
+- GET /stats/jokes?top=10
+- GET /stats/commands?top=20
+
+PowerShell curl examples (assuming PORT=3000):
+
+# Status
+curl -s http://localhost:3000/bot/status -H "X-API-Key: $env:API_KEY" | jq
+
+# Enable / Disable
+curl -s -X POST http://localhost:3000/bot/enable -H "X-API-Key: $env:API_KEY" | jq
+curl -s -X POST http://localhost:3000/bot/disable -H "X-API-Key: $env:API_KEY" | jq
+
+# Restart (soft)
+curl -s -X POST http://localhost:3000/bot/restart -H "Content-Type: application/json" -H "X-API-Key: $env:API_KEY" -d '{"mode":"soft"}' | jq
+
+# Stats overview
+curl -s http://localhost:3000/stats -H "X-API-Key: $env:API_KEY" | jq
+
+# Stats messages by window / filters
+curl -s "http://localhost:3000/stats/messages?from=2025-08-01&to=2025-08-18&channelId=123" -H "X-API-Key: $env:API_KEY" | jq
+
+Notes:
+- In disabled mode, the bot ignores command processing. Message counting can be kept on/off via COUNT_WHEN_DISABLED.
+- Hard restarts only make sense if a supervisor restarts the process.

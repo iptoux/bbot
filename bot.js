@@ -19,7 +19,7 @@ console.log("SYSTEM_PROMPT:", process.env.SYSTEM_PROMPT || "Not set, will use de
 
 import express from "express";
 import cors from "cors";
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, GatewayIntentBits, PermissionsBitField } from "discord.js";
 import OpenAI from "openai";
 import { 
     initUserMemory, 
@@ -34,6 +34,7 @@ import {
     addQuizPoints,
     getQuizToplist
 } from "./userMemory.js";
+import { stats } from "./src/services/stats.service.js";
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const PORT = process.env.BOT_PORT || 4000;
@@ -158,6 +159,19 @@ client.on("messageCreate", async (message) => {
 
     // Ignore messages from the bot itself
     if (message.author.bot) return;
+
+    // Stats: count every user message
+    try {
+        stats.incrementMessage({ userId: message.author.id, channelId: message.channel?.id || message.channelId, guildId: message.guildId, timestamp: Date.now() });
+    } catch {}
+
+    // Stats: count commands (messages starting with '!')
+    if ((message.content || '').startsWith('!')) {
+        const cmd = (message.content || '').slice(1).trim().split(/\s+/)[0]?.toLowerCase() || '';
+        if (cmd) {
+            try { stats.incrementCommand({ name: cmd, userId: message.author.id, timestamp: Date.now() }); } catch {}
+        }
+    }
 
     if (message.content.startsWith("!llm") && message.author.tag.toLowerCase() === "volkan") {
         return message.reply("Sorry, du hast keine Credits mehr. Lade Freunde ein, um 20 weitere Credits zu erhalten!");
@@ -301,6 +315,96 @@ client.on("messageCreate", async (message) => {
             lines.push(`${i + 1}. ${name}: ${t.quizPoints} Punkte`);
         }
         return message.reply(["Top Quiz-Spieler:", ...lines].join('\n'));
+    }
+
+    // Server activity statistics: !stats [N] | !stats reset
+    if (message.content.startsWith("!stats")) {
+        // Must be used in a server (guild)
+        if (!message.guildId) {
+            return message.reply("Dieser Befehl funktioniert nur in Server-Kanälen.");
+        }
+        const parts = message.content.trim().split(/\s+/);
+        const sub = (parts[1] || '').toLowerCase();
+
+        // Admin/mod-only reset subcommand
+        if (sub === 'reset') {
+            const mem = message.member;
+            const hasPerm = !!mem && (
+                mem.permissions.has(PermissionsBitField.Flags.Administrator) ||
+                mem.permissions.has(PermissionsBitField.Flags.ManageGuild) ||
+                mem.permissions.has(PermissionsBitField.Flags.ManageChannels) ||
+                mem.permissions.has(PermissionsBitField.Flags.ManageMessages)
+            );
+            if (!hasPerm) {
+                return message.reply('❌ Nur Admins/Mods dürfen diese Aktion ausführen.');
+            }
+            try {
+                const result = stats.resetGuildMessages(message.guildId);
+                if (result?.ok) {
+                    return message.reply(`✅ Aktivitätsstatistiken (Nachrichten) für diesen Server wurden zurückgesetzt. Entfernte Events: ${result.removedEvents}. Hinweis: Befehls- und Witz-Zähler bleiben unverändert.`);
+                }
+                return message.reply(`❌ Konnte Statistiken nicht zurücksetzen: ${result?.error || 'Unbekannter Fehler'}`);
+            } catch (e) {
+                console.error('!stats reset error', e);
+                return message.reply('❌ Fehler beim Zurücksetzen der Statistiken.');
+            }
+        }
+
+        const nRaw = parseInt(parts[1] || '10', 10);
+        const n = Math.max(3, Math.min(25, Number.isFinite(nRaw) ? nRaw : 10));
+
+        // Build exclusion list from env (IDs, <#ID>, or names). Names are matched case-insensitively
+        // and also by suffix to handle prefixed display naming styles.
+        const rawEx = String(process.env.STATS_EXCLUDE_CHANNELS || '')
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean);
+        const excludeSet = new Set();
+        const guild = message.guild;
+        if (guild && rawEx.length) {
+            for (const tok of rawEx) {
+                const mentionMatch = tok.match(/^<#(\d+)>$/);
+                if (mentionMatch) {
+                    excludeSet.add(mentionMatch[1]);
+                    continue;
+                }
+                if (/^\d{5,}$/.test(tok)) {
+                    excludeSet.add(tok);
+                    continue;
+                }
+                const needle = tok.toLowerCase();
+                guild.channels.cache.forEach((ch) => {
+                    const nm = (ch?.name || '').toLowerCase();
+                    if (nm === needle || nm.endsWith(needle)) excludeSet.add(ch.id);
+                });
+            }
+        }
+        const excludeChannelIds = Array.from(excludeSet);
+
+        try {
+            const { users, channels } = stats.getToplistsByGuild({ guildId: message.guildId, topUsers: n, topChannels: n, excludeChannelIds });
+            const userLines = (users && users.length)
+                ? users.map((u, i) => `${i + 1}. <@${u.userId}> — ${u.count} Nachrichten`)
+                : ["(keine Daten)"];
+            const channelLines = (channels && channels.length)
+                ? channels.map((c, i) => `${i + 1}. <#${c.channelId}> — ${c.count} Nachrichten`)
+                : ["(keine Daten)"];
+            const header = `Aktivitäts‑Statistik (Top ${n})`;
+            const excludedNote = excludeChannelIds.length ? ` (ohne ${excludeChannelIds.map(id => `<#${id}>`).join(', ')})` : '';
+            const msg = [
+                header + excludedNote,
+                '',
+                'Top Nutzer:',
+                ...userLines,
+                '',
+                'Top Kanäle:',
+                ...channelLines
+            ].join('\n');
+            return message.reply(msg.slice(0, 1900)); // keep well under 2000 chars
+        } catch (e) {
+            console.error('!stats error', e);
+            return message.reply('Konnte Statistiken nicht laden.');
+        }
     }
 
     if (message.content.startsWith("!llm")) {
@@ -745,6 +849,9 @@ client.on("messageCreate", async (message) => {
             "**`!llm <prompt>`** - Sende eine Anfrage an die KI und erhalte eine Antwort",
             "Beispiel: `!llm Erzähl mir einen Programmier-Witz`",
             "",
+            "**`!joke <typ>`** - Erzählt einen Witz des angegebenen Typs (aus jokes.json)",
+            "Tipp: `!joke list` oder `!joke help` zeigt alle Typen, `!joke random` wählt zufällig.",
+            "",
             "**`!memory view`** - Zeige deine gespeicherten Informationen (per Privatnachricht)",
             "**`!memory delete`** - Lösche alle deine gespeicherten Informationen",
             "",
@@ -756,6 +863,8 @@ client.on("messageCreate", async (message) => {
             "",
             "**`!quiz [Anzahl]`** - Starte ein Quiz im Kanal (bis zu 5 Fragen, Standard 5). Alle können antworten.",
             "**`!toplist`** - Zeige die Top‑Nutzer nach Quiz‑Punkten",
+            "**`!stats [N]`** - Zeige Top‑N Nutzer und Kanäle nach Nachrichten (Standard 10)",
+            "**`!stats reset`** - Setzt die Server‑Aktivitätsstatistiken (Nachrichten) zurück — nur Admins/Mods",
             "",
             `Hinweis: Du kannst nur alle ${QUIZ_COOLDOWN_MINUTES} Minute(n) ein Quiz starten.`
         ].join("\n");
