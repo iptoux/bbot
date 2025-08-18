@@ -108,7 +108,12 @@ app.use(express.json());
 
 // Persistent bot client
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
+    ]
 });
 
 // Example: simple notify list
@@ -152,6 +157,23 @@ client.once("ready", async () => {
     // Initialize user memory system
     await initUserMemory();
     console.log("User memory system ready");
+});
+
+// Welcome new members in channel "┏〢allgemein" with a hint about !cmd
+client.on("guildMemberAdd", async (member) => {
+    try {
+        const guild = member.guild;
+        if (!guild) return;
+        // Find a text-based channel with the exact name
+        const channel = guild.channels?.cache?.find(
+            (ch) => typeof ch?.name === 'string' && ch.name === "┏〢allgemein" && typeof ch.isTextBased === 'function' && ch.isTextBased()
+        );
+        if (channel && typeof channel.send === 'function') {
+            await channel.send(`Hallo ${member}, willkommen auf dem Server! Schreib \`!cmd\` für eine Übersicht der Befehle.`);
+        }
+    } catch (e) {
+        console.error("[guildMemberAdd] Failed to send welcome message:", e?.message || e);
+    }
 });
 
 client.on("messageCreate", async (message) => {
