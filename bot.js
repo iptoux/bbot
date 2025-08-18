@@ -414,7 +414,7 @@ client.on("messageCreate", async (message) => {
             const header = `Aktivitäts‑Statistik (Top ${n})`;
             const excludedNote = excludeChannelIds.length ? ` (ohne ${excludeChannelIds.map(id => `<#${id}>`).join(', ')})` : '';
             const msg = [
-                header + excludedNote,
+                header, //+ excludedNote,
                 '',
                 'Top Nutzer:',
                 ...userLines,
