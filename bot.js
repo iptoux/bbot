@@ -51,100 +51,44 @@ const QUIZ_ANSWER_TIME_MS = QUIZ_ANSWER_SECONDS * 1000;
 const QUIZ_COOLDOWN_MINUTES = Math.max(1, parseInt(process.env.QUIZ_COOLDOWN_MINUTES, 10) || 60);
 const QUIZ_COOLDOWN_MS = QUIZ_COOLDOWN_MINUTES * 60 * 1000;
 
-const jokes = {
-    wordpress: [
-        "Das Ikea-Regal unter den CMS – passt immer irgendwie, wackelt aber manchmal.",
-        "Plug-in Roulette: Welches bricht heute alles?",
-        "WordPress – wo Updates wie Überraschungseier sind: Spannung, Spiel und… kaputte Website.",
-        "WordPress – weil 80% der Webseiten sich nicht selbst kaputt machen.",
-        "Das CMS, das aus 'nur mal kurz bloggen' eine lebenslange Wartung macht.",
-        "WordPress-Update: 1 Minute runterladen, 3 Stunden Fehler beheben."
-    ],
-    php: [
-        "Pretty Hopeless Programming?",
-        "PHP – der Code, den du 2005 geschrieben hast, läuft immer noch. Und das ist das Problem.",
-        "PHP ist wie Pizza mit Ananas: polarisiert, aber läuft trotzdem.",
-        "PHP – wie ein altes Sofa: nicht schön, aber bequem und steht schon ewig da.",
-        "In PHP gibt’s 100 Wege, etwas zu tun – und mindestens 90 davon sind falsch.",
-        "PHP – du weißt nie, ob es Magie oder nur ein Bug ist."
-    ],
-    angular: [
-        "Angular – wie React, nur mit mehr Ritualen.",
-        "Angular ist das Ikea-Regal mit 3000 Schrauben – aber die Anleitung ist ein PDF auf Englisch.",
-        "Mit Angular brauchst du keinen Escape Room – der Code ist der Escape Room.",
-        "Angular: Weil wir alle heimlich DI (Dependency Injection) lieben.",
-        "Mit Angular fängst du klein an – und landest in einer Ordnerstruktur mit eigener Postleitzahl.",
-        "Angular – das Framework, das dich mehr über Interfaces als über deine App nachdenken lässt."
-    ],
-    filemaker: [
-        "FileMaker – das Schweizer Taschenmesser der Datenbanken, nur mit eigenem Korkenzieher.",
-        "Mit FileMaker kannst du alles bauen – außer vielleicht ein Flugzeug. Oder doch?",
-        "FileMaker: Wo Tabellen nicht nur Tabellen sind, sondern auch deine besten Freunde.",
-        "FileMaker – der Baukasten für Datenbankfans mit leichtem Kontrollzwang.",
-        "FileMaker: Weil Excel irgendwann einfach zu klein wird.",
-        "In FileMaker gibt’s keinen Bug – nur ein kreatives Feature mit Persönlichkeit."
-    ],
-    concrete5: [
-        "Concrete5 – das CMS, das härter ist als dein Kopf bei der Fehlersuche.",
-        "Mit Concrete5 baust du Webseiten so solide, dass sie auch einen Erdbeben-Test bestehen.",
-        "Concrete5: Wenn WordPress zu weich und Joomla zu seltsam ist.",
-        "Concrete5 – das einzige CMS, bei dem du beim Installieren einen Bauhelm brauchst.",
-        "Concrete5: Weil Content-Management auch Beton vertragen kann.",
-        "So stabil wie Beton – und manchmal genauso flexibel."
-    ],
-    django: [
-        "Django – wie Zauberei, nur mit mehr Migrationen.",
-        "Mit Django kannst du in einer Stunde eine App bauen – und drei Tage das Admin-Panel anpassen.",
-        "Django: Weil wir alle heimlich Class-Based Views lieben. Oder hassen. Oder beides.",
-        "Django – das Framework, das dich 'makemigrations' im Schlaf tippen lässt.",
-        "Mit Django ist alles schnell gebaut – bis du anfängst, das ORM zu optimieren.",
-        "Django: Für Leute, die 'batteries included' sehr wörtlich nehmen."
-    ],
-    typescript: [
-        "TypeScript – weil wir alle irgendwann Tippfehler satt hatten.",
-        "TypeScript: JavaScript mit einem Sicherheitsgurt.",
-        "TypeScript – die einzige Sprache, die dir sagt, dass du falsch liegst, bevor du es merkst.",
-        "Mit TypeScript ist dein Code sicher… bis du überall `any` benutzt.",
-        "TypeScript: Die To-Do-Liste für deinen Compiler.",
-        "TypeScript – wie ein strenger Lehrer, der dich aber mag."
-    ],
-    javascript: [
-        "JavaScript – wo `==` und `===` zwei völlig verschiedene Welten sind.",
-        "JavaScript: Weil wir nicht genug Chaos im Leben hatten.",
-        "Mit JavaScript kannst du alles bauen – auch Kopfschmerzen.",
-        "JavaScript – das Schweizer Taschenmesser, das sich manchmal selbst schneidet.",
-        "JavaScript: undefined is not a function… und doch irgendwie schon.",
-        "JavaScript – wo Datum und Zeit ein eigenes Abenteuer sind."
-    ],
-    html: [
-        "HTML – das Gerüst, das ohne CSS aussieht wie eine Baustelle.",
-        "HTML: Wenn du `<blink>` vermisst, bist du offiziell alt.",
-        "HTML – einfach, bis du anfängst, alles zu verschachteln.",
-        "Mit HTML allein ist eine Website wie ein Buch ohne Bilder.",
-        "HTML – die Sprache, die jeder kennt, aber keiner zugeben will.",
-        "HTML: Die Mutter aller Webseiten – manchmal streng, manchmal nachsichtig."
-    ],
-    css: [
-        "CSS – wo ein fehlendes Semikolon ganze Welten zerstört.",
-        "CSS: Weil Pixel nie da landen, wo du sie willst.",
-        "CSS – der Ort, an dem du `!important` als letzte Rettung benutzt.",
-        "Mit CSS bist du entweder Gott… oder der Teufel spielt mit deinen Abständen.",
-        "CSS: Flexbox – für alle, die gern Puzzles lösen.",
-        "CSS – die einzige Sprache, die es schafft, dich wegen 1px in den Wahnsinn zu treiben."
-    ]
-};
+// Jokes loading from external JSON
+let jokesCache = null;
+async function loadJokes() {
+    if (jokesCache) return jokesCache;
+    try {
+        const raw = await fs.readFile(`${__dirname}/jokes.json`, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            // keep only arrays of strings
+            const cleaned = {};
+            for (const [k, v] of Object.entries(parsed)) {
+                if (Array.isArray(v)) {
+                    const arr = v.filter(x => typeof x === 'string' && x.trim().length > 0);
+                    if (arr.length) cleaned[k.toLowerCase()] = arr;
+                }
+            }
+            jokesCache = cleaned;
+        } else {
+            throw new Error('jokes.json must be an object of arrays');
+        }
+    } catch (e) {
+        console.error('Failed to load jokes:', e.message || e);
+        jokesCache = {};
+    }
+    return jokesCache;
+}
 
-// Zufälligen Witz zu einem Begriff ausgeben
-function randomJoke(term, channel) {
-    if (channel === "┏〢programmierer-chat") {
-        console.log(`Skipping joke for channel "${channel}".`);
-        return;
+function getRandomJoke(jokesObj, type) {
+    const keys = Object.keys(jokesObj);
+    if (keys.length === 0) return null;
+    let chosenType = type && type !== 'random' ? type.toLowerCase() : null;
+    if (!chosenType || !jokesObj[chosenType]) {
+        chosenType = keys[Math.floor(Math.random() * keys.length)];
     }
-    if (!jokes[term]) {
-        console.log(`Keine Witze für "${term}" gefunden.`);
-    }
-    const list = jokes[term];
-    return list[Math.floor(Math.random() * list.length)];
+    const list = jokesObj[chosenType] || [];
+    if (list.length === 0) return null;
+    const joke = list[Math.floor(Math.random() * list.length)];
+    return { joke, type: chosenType };
 }
 
 // Initialize OpenAI client
@@ -621,44 +565,33 @@ client.on("messageCreate", async (message) => {
         }
     }
 
-    else if (message.content.toLowerCase().includes("angular")) {
-        const responseMessage = await message.reply(randomJoke("angular",message.channel.name));
-    }
-    else if (message.content.toLowerCase().includes("concrete5")) {
-        const responseMessage = await message.reply(randomJoke("concrete5",message.channel.name));
-    }
-
-    else if (message.content.toLowerCase().includes("css")) {
-        const responseMessage = await message.reply(randomJoke("css",message.channel.name));
-    }
-
-    else if (message.content.toLowerCase().includes("django")) {
-        const responseMessage = await message.reply(randomJoke("django",message.channel.name));
-    }
-
-
-    else if (message.content.toLowerCase().includes("filemaker")) {
-        const responseMessage = await message.reply(randomJoke("filemaker",message.channel.name));
-    }
-
-    else if (message.content.toLowerCase().includes("html")) {
-        const responseMessage = await message.reply(randomJoke("html",message.channel.name));
-    }
-
-    else if (message.content.toLowerCase().includes("javascript")) {
-        const responseMessage = await message.reply(randomJoke("javascript",message.channel.name));
-    }
-
-    else if (message.content.toLowerCase().includes("php")) {
-        const responseMessage = await message.reply(randomJoke("php",message.channel.name));
-    }
-
-    else if (message.content.toLowerCase().includes("typescript")) {
-        const responseMessage = await message.reply(randomJoke("typescript",message.channel.name));
-    }
-
-    else if (message.content.toLowerCase().includes("wordpress")) {
-        const responseMessage = await message.reply(randomJoke("wordpress",message.channel.name));
+    // Jokes command: !joke <type>
+    if (message.content.startsWith("!joke")) {
+        const args = message.content.split(/\s+/).slice(1);
+        const requested = (args[0] || '').toLowerCase();
+        const jokes = await loadJokes();
+        const types = Object.keys(jokes).sort();
+        if (!types.length) {
+            return message.reply("Keine Witze verfügbar. Bitte informiere den Administrator, dass jokes.json fehlt oder leer ist.");
+        }
+        // Help or list types
+        if (!requested || requested === 'help' || requested === 'list' || requested === '--help' || requested === '-h') {
+            const list = types.join(', ');
+            return message.reply([ 
+                "Benutzung: !joke <typ>",
+                `Verfügbare Typen: ${list}`,
+                "Beispiel: !joke php oder !joke random"
+            ].join('\n'));
+        }
+        const result = getRandomJoke(jokes, requested);
+        if (!result) {
+            return message.reply("Konnte keinen Witz finden. Bitte versuche es später erneut.");
+        }
+        // If invalid type requested, inform and still provide a random one
+        if (!jokes[requested]) {
+            await message.reply(`Unbekannter Typ \"${requested}\". Ich habe einen zufälligen Witz genommen.`);
+        }
+        return message.reply(result.joke);
     }
 
     // Handle memory commands

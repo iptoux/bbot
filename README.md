@@ -227,16 +227,41 @@ Question catalog (quiz-questions.json):
 - File location: quiz-questions.json at project root.
 - Structure example:
 ```JSON
-  {
-  "category": "Programming",             // optional
-  "question": "Which array method filters elements?", // required
-  "choices": ["map", "forEach", "filter", "reduce"], // 2–6 options
-  "answerIndex": 2                         // 0-based index
-} 
+{
+  "category": "Programming",
+  "question": "Which array method filters elements?",
+  "choices": ["map", "forEach", "filter", "reduce"],
+  "answerIndex": 2
+}
 ```
 - Up to 5 questions are asked per quiz (or fewer if you use !quiz 3).
 - Supported options: A–F (max 6 choices).
 - Ensure answerIndex is within choices range.
+
+### Jokes command
+
+!joke <type>
+- Tells a joke of the given type. Types are loaded from jokes.json.
+- Use !joke list (or !joke help) to see all available types.
+- You can also use !joke random to get a random type.
+
+Jokes catalog (jokes.json):
+- File location: jokes.json at project root.
+- Structure: an object mapping type names to arrays of joke strings.
+- Example snippet:
+```JSON
+{
+  "php": [
+    "PHP – der Code, den du 2005 geschrieben hast, läuft immer noch.",
+    "In PHP gibt’s 100 Wege, etwas zu tun – und mindestens 90 davon sind falsch."
+  ],
+  "css": [
+    "CSS – wo ein fehlendes Semikolon ganze Welten zerstört."
+  ]
+}
+```
+- To add or edit jokes, modify jokes.json and restart the bot.
+- Automatic joke responses to keywords in normal chat have been disabled; use the !joke command instead.
 
 ## User Memory (RAG)
 
