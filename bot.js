@@ -888,6 +888,7 @@ client.on("messageCreate", async (message) => {
             "** MUSIC COMMANDS **",
             "**`!current`** - Zeigt den aktuellen Song an",
             "**`!wish <youtube url>`** - Ein Youtube Audio zur wishlist des Radios hinzufügen",
+            "",
             `Hinweis: Du kannst nur alle ${QUIZ_COOLDOWN_MINUTES} Minute(n) ein Quiz starten.`
         ].join("\n");
         
