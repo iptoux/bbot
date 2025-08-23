@@ -885,6 +885,8 @@ client.on("messageCreate", async (message) => {
             "",
             "**`!stats [N]`** - Zeige Top‑N Nutzer und Kanäle nach Nachrichten (Standard 10)",
             "",
+            "** MUSIC COMMANDS **",
+            "**`!current`** - Zeigt den aktuellen Song an",
             "**`!wish <youtube url>`** - Ein Youtube Audio zur wishlist des Radios hinzufügen",
             `Hinweis: Du kannst nur alle ${QUIZ_COOLDOWN_MINUTES} Minute(n) ein Quiz starten.`
         ].join("\n");
