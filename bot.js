@@ -874,9 +874,6 @@ client.on("messageCreate", async (message) => {
             "**`!joke <typ>`** - Erzählt einen Witz des angegebenen Typs (aus jokes.json)",
             "Tipp: `!joke list` oder `!joke help` zeigt alle Typen, `!joke random` wählt zufällig.",
             "",
-            "**`!memory view`** - Zeige deine gespeicherten Informationen (per Privatnachricht)",
-            "**`!memory delete`** - Lösche alle deine gespeicherten Informationen",
-            "",
             "**`!fact add <Fakt>`** - Füge einen Fakt über dich hinzu",
             "Beispiel: `!fact add Ich mag Programmierung`",
             "",
@@ -885,9 +882,10 @@ client.on("messageCreate", async (message) => {
             "",
             "**`!quiz [Anzahl]`** - Starte ein Quiz im Kanal (bis zu 5 Fragen, Standard 5). Alle können antworten.",
             "**`!toplist`** - Zeige die Top‑Nutzer nach Quiz‑Punkten",
-            "**`!stats [N]`** - Zeige Top‑N Nutzer und Kanäle nach Nachrichten (Standard 10)",
-            "**`!stats reset`** - Setzt die Server‑Aktivitätsstatistiken (Nachrichten) zurück — nur Admins/Mods",
             "",
+            "**`!stats [N]`** - Zeige Top‑N Nutzer und Kanäle nach Nachrichten (Standard 10)",
+            "",
+            "**`!wish <youtube url>`** - Ein Youtube Audio zur wishlist des Radios hinzufügen",
             `Hinweis: Du kannst nur alle ${QUIZ_COOLDOWN_MINUTES} Minute(n) ein Quiz starten.`
         ].join("\n");
         
