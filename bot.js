@@ -689,8 +689,8 @@ client.on("messageCreate", async (message) => {
         if (!result) {
             return message.reply("Konnte keinen Witz finden. Bitte versuche es später erneut.");
         }
-        // If invalid type requested, inform and still provide a random one
-        if (!jokes[requested]) {
+        // If invalid type requested (but not 'random'), inform and still provide a random one
+        if (requested && requested !== 'random' && !jokes[requested]) {
             await message.reply(`Unbekannter Typ \"${requested}\". Ich habe einen zufälligen Witz genommen.`);
         }
         return message.reply(result.joke);
