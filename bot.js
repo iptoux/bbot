@@ -372,8 +372,8 @@ client.on("messageCreate", async (message) => {
             }
         }
 
-        const nRaw = parseInt(parts[1] || '10', 10);
-        const n = Math.max(3, Math.min(25, Number.isFinite(nRaw) ? nRaw : 10));
+        // Fixed to Top 15 users only (channels removed)
+        const n = 15;
 
         // Build exclusion list from env (IDs, <#ID>, or names). Names are matched case-insensitively
         // and also by suffix to handle prefixed display naming styles.
@@ -404,23 +404,16 @@ client.on("messageCreate", async (message) => {
         const excludeChannelIds = Array.from(excludeSet);
 
         try {
-            const { users, channels } = stats.getToplistsByGuild({ guildId: message.guildId, topUsers: n, topChannels: n, excludeChannelIds });
+            const users = stats.getTopUsersByGuild({ guildId: message.guildId, top: n, excludeChannelIds });
             const userLines = (users && users.length)
                 ? users.map((u, i) => `${i + 1}. <@${u.userId}> — ${u.count} Nachrichten`)
                 : ["(keine Daten)"];
-            const channelLines = (channels && channels.length)
-                ? channels.map((c, i) => `${i + 1}. <#${c.channelId}> — ${c.count} Nachrichten`)
-                : ["(keine Daten)"];
             const header = `Aktivitäts‑Statistik (Top ${n})`;
-            const excludedNote = excludeChannelIds.length ? ` (ohne ${excludeChannelIds.map(id => `<#${id}>`).join(', ')})` : '';
             const msg = [
-                header, //+ excludedNote,
+                header,
                 '',
                 'Top Nutzer:',
-                ...userLines,
-                '',
-                'Top Kanäle:',
-                ...channelLines
+                ...userLines
             ].join('\n');
             return message.reply(msg.slice(0, 1900)); // keep well under 2000 chars
         } catch (e) {
@@ -847,7 +840,7 @@ client.on("messageCreate", async (message) => {
             "**`!joke <typ>`** - Erzählt einen Witz des angegebenen Typs (aus jokes.json)",
             "Tipp: `!joke list` oder `!joke help` zeigt alle Typen, `!joke random` wählt zufällig.",
             "",
-            "**`!stats [N]`** - Zeige Top‑N Nutzer und Kanäle nach Nachrichten (Standard 10)",
+            "**`!stats`** - Zeige die Top 15 Nutzer nach Nachrichten",
             "",
             "** LLM Commands **",
             "**`!llm <prompt>`** - Sende eine Anfrage an die KI und erhalte eine Antwort",
