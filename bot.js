@@ -455,11 +455,15 @@ client.on("messageCreate", async (message) => {
             return message.reply("Bitte gib nach !llm eine Nachricht ein oder füge Bild(er) an. Beispiel: !llm Erzähl mir einen Witz");
         }
         
+        let __typingInterval;
         try {
             console.log(`Processing LLM request: "${prompt}"`);
             
-            // Send initial response to indicate processing
-            const responseMessage = await message.reply("Verarbeite deine Anfrage...");
+            // Show typing indicator while generating the answer (no streaming)
+            await message.channel.sendTyping();
+            const __typingInterval = setInterval(() => {
+                message.channel.sendTyping().catch(() => {});
+            }, 9000);
             
             // For LM Studio, we may need to adjust the model name format
             // LM Studio typically uses the model name without the "openai/" prefix
@@ -550,21 +554,6 @@ client.on("messageCreate", async (message) => {
                 userMessage = { role: "user", content: prompt };
             }
 
-            // Create a stream for the OpenAI response
-            const stream = await openai.chat.completions.create({
-                model: modelName,
-                messages: [
-                    { 
-                        role: "system", 
-                        content: systemMessage
-                    },
-                    userMessage
-                ],
-                stream: true,
-            });
-            
-            console.log("Stream created successfully");
-            
             // Utility to sanitize the model response so it does not include image URLs from attachments
             function sanitizeResponse(text) {
                 if (!text) return "";
@@ -615,65 +604,52 @@ client.on("messageCreate", async (message) => {
                 return chunks;
             }
 
-            let responseContent = "";
-            let lastUpdateTime = Date.now();
-            let sentChunkCount = 0; // how many chunks we've already sent (first via edit, rest via new messages)
-            
-            // Process the stream
-            for await (const chunk of stream) {
-                // Get the content from the chunk
-                const content = chunk.choices[0]?.delta?.content || "";
-                if (content) {
-                    responseContent += content;
-                    
-                    // Update the message every 1 second or upon newline
-                    const currentTime = Date.now();
-                    if (currentTime - lastUpdateTime > 1000 || content.includes("\n")) {
-                        const sanitized = sanitizeResponse(responseContent);
-                        const chunks = splitDiscordMessage(sanitized);
-                        // Ensure first chunk updates the original message
-                        if (chunks.length > 0) {
-                            if (sentChunkCount === 0) {
-                                await responseMessage.edit(chunks[0]);
-                                sentChunkCount = 1;
-                            } else {
-                                // Update the first message only if it changed (optional optimization)
-                                await responseMessage.edit(chunks[0]);
-                            }
-                        }
-                        // Send any new chunks beyond what we've already sent
-                        for (let i = sentChunkCount; i < chunks.length; i++) {
-                            await message.channel.send(chunks[i]);
-                        }
-                        sentChunkCount = Math.max(sentChunkCount, chunks.length);
-                        lastUpdateTime = currentTime;
-                    }
+            // Create a non-streaming completion
+            const completion = await openai.chat.completions.create({
+                model: modelName,
+                messages: [
+                    {
+                        role: "system",
+                        content: systemMessage
+                    },
+                    userMessage
+                ],
+                stream: false,
+            });
+
+            let responseContent = completion?.choices?.[0]?.message?.content || "";
+
+            // Finalize and send a single complete message (split only if Discord limit requires it)
+            const sanitizedFinal = sanitizeResponse(responseContent);
+            const chunks = splitDiscordMessage(sanitizedFinal);
+            if (chunks.length > 0) {
+                // First chunk as a reply
+                await message.reply(chunks[0]);
+                // Any remaining chunks (only if necessary due to Discord 2000-char limit)
+                for (let i = 1; i < chunks.length; i++) {
+                    await message.channel.send(chunks[i]);
                 }
+            } else {
+                await message.reply("Keine Antwort erzeugt. Bitte versuche es erneut.");
             }
-            
-            // Final update to ensure all content is displayed
-            if (responseContent) {
-                const sanitizedFinal = sanitizeResponse(responseContent);
-                const chunks = splitDiscordMessage(sanitizedFinal);
-                if (chunks.length > 0) {
-                    // Ensure the first message is updated to the first chunk
-                    await responseMessage.edit(chunks[0]);
-                    // Send any remaining chunks not yet sent
-                    for (let i = sentChunkCount; i < chunks.length; i++) {
-                        await message.channel.send(chunks[i]);
-                    }
-                }
-                
-                // Record the interaction and extract facts (store sanitized content to avoid image links)
+
+            // Record the interaction and extract facts (store sanitized content to avoid image links)
+            if (sanitizedFinal) {
                 await addUserInteraction(userId, username, prompt, sanitizedFinal);
                 await extractUserFacts(userId, prompt, sanitizedFinal);
                 console.log(`Recorded interaction for user ${username} (${userId})`);
-            } else {
-                await responseMessage.edit("Keine Antwort erzeugt. Bitte versuche es erneut.");
             }
+
+            // Stop typing indicator
+            clearInterval(__typingInterval);
         } catch (error) {
             const apiType = isUsingLMStudio ? "LM Studio API" : "OpenAI API";
             console.error(`Error with ${apiType}:`, error);
+            
+            // Stop typing indicator if running
+            if (__typingInterval) {
+                clearInterval(__typingInterval);
+            }
             
             let errorMessage = "Entschuldigung, bei der Verarbeitung deiner Anfrage ist ein Fehler aufgetreten. Ich habe meinen Besitzer informiert. Bitte versuche es später erneut.";
             
